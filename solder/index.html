@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAZARI MD • Pairing</title>
+  <link rel="stylesheet" href="./style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+  <!-- Background Glow Effects -->
+  <div class="bg-glow glow-left"></div>
+  <div class="bg-glow glow-right"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo-area">
+      <div class="logo-icon">MD</div>
+      <div class="logo-text">
+        <span class="logo-title">MAZARI MD</span>
+        <span class="logo-subtitle">WHATSAPP BOT PAIRING</span>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="#" class="nav-item active"><i class="fas fa-home"></i> Home</a>
+      <a href="#" class="nav-item"><i class="fas fa-star"></i> Features</a>
+      <a href="#" class="nav-item"><i class="fas fa-question-circle"></i> How to Pair</a>
+      <a href="#" class="nav-item"><i class="fas fa-signal"></i> Status</a>
+    </nav>
+    <div class="system-status">
+      <div class="status-indicator"></div>
+      <div class="status-text">
+        <span class="status-title">SYSTEM ONLINE</span>
+        <span class="status-subtitle">All Systems Operational</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="hero-section">
+      <h1 class="main-title">PAIR YOUR <span class="text-red">BOT</span></h1>
+      <div class="divider">
+        <span><i class="fas fa-link"></i></span>
+      </div>
+      <p class="hero-subtitle">Enter your WhatsApp number and get your pairing code<br>to connect with <span class="text-red">MAZARI MD</span> Bot.</p>
+    </div>
+
+    <div class="content-grid">
+      <!-- Left Column (Form) -->
+      <div class="left-col">
+        <div class="card glass-card form-card">
+          <div class="card-header">
+            <div class="icon-box"><i class="fas fa-link"></i></div>
+            <div class="header-text">
+              <h2>GENERATE PAIRING CODE</h2>
+              <p>Enter your WhatsApp number</p>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>WhatsApp Number</label>
+            <div class="input-wrapper">
+              <div class="country-code">
+                <i class="fas fa-phone"></i>
+                <img src="https://flagcdn.com/w20/pk.png" alt="PK" class="flag">
+                <span>+92</span>
+              </div>
+              <input type="tel" id="phone-input" placeholder="Enter your WhatsApp number" autocomplete="off" />
+            </div>
+            <p class="help-text"><i class="far fa-check-circle text-red"></i> Make sure your number is active on WhatsApp</p>
+          </div>
+
+          <button id="pair-btn" class="btn-primary">
+            <i class="fas fa-bolt"></i> GENERATE PAIRING CODE
+          </button>
+          
+          <div id="result" class="result hidden"></div>
+          
+          <p class="secure-text"><i class="fas fa-lock"></i> Your data is secure and will never be shared</p>
+        </div>
+
+        <!-- Features Bar -->
+        <div class="features-bar glass-card">
+          <div class="feature">
+            <i class="fas fa-shield-check text-red feature-icon"></i>
+            <div class="feature-text">
+              <h4>Secure Connection</h4>
+              <p>End-to-end encrypted and 100% secure</p>
+            </div>
+          </div>
+          <div class="feature">
+            <i class="fas fa-bolt text-red feature-icon"></i>
+            <div class="feature-text">
+              <h4>Instant Pairing</h4>
+              <p>Get your code instantly</p>
+            </div>
+          </div>
+          <div class="feature">
+            <i class="fas fa-desktop text-red feature-icon"></i>
+            <div class="feature-text">
+              <h4>Multi Device</h4>
+              <p>Use on multiple devices</p>
+            </div>
+          </div>
+          <div class="feature">
+            <i class="fas fa-medal text-red feature-icon"></i>
+            <div class="feature-text">
+              <h4>Premium Bot</h4>
+              <p>Advanced features and automation</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column (Instructions) -->
+      <div class="right-col">
+        <div class="card glass-card steps-card">
+          <div class="steps-header">
+            <h3><i class="fas fa-info-circle"></i> HOW TO PAIR</h3>
+          </div>
+          
+          <div class="steps-list">
+            <div class="step">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h4>Enter your WhatsApp number</h4>
+                <p>Use the number you want to connect with the bot.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h4>Click on Generate Pairing Code</h4>
+                <p>Wait a few seconds while we generate your code.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h4>Copy the pairing code</h4>
+                <p>Click the copy button to copy the code.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">4</div>
+              <div class="step-content">
+                <h4>Open WhatsApp</h4>
+                <p>Go to WhatsApp and link the device using the code.</p>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-number">5</div>
+              <div class="step-content">
+                <h4>Enjoy the Bot</h4>
+                <p>You are now connected! Enjoy all premium features.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="expire-notice">
+            <i class="far fa-check-circle text-red"></i>
+            <p>The code expires in <span class="text-red">2 minutes</span>.<br>Generate a new one if expired.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content glass-card">
+      <div class="footer-logo">
+        <div class="logo-icon small">MD</div>
+        <div class="logo-text">
+          <span class="logo-title">MAZARI MD</span>
+          <span class="logo-subtitle">WHATSAPP BOT</span>
+        </div>
+      </div>
+      <div class="copyright">
+        <p>© 2024 MAZARI MD. All Rights Reserved.</p>
+        <p>Designed with <i class="fas fa-heart text-red"></i> for Premium Experience</p>
+      </div>
+      <div class="made-by">
+        <p>Made by</p>
+        <p class="text-red font-bold">MAZARI HACKER</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating Badges -->
+  <div class="floating-badge badge-left glass-card">
+    <div class="status-indicator"></div>
+    <div class="badge-text">
+      <span class="badge-title text-green">ONLINE</span>
+      <span class="badge-subtitle">Bot is running</span>
+    </div>
+  </div>
+  
+  <div class="floating-badge badge-right glass-card">
+    <i class="fas fa-shield-check text-green badge-icon"></i>
+    <div class="badge-text">
+      <span class="badge-title text-green">100% SECURE</span>
+      <span class="badge-subtitle">Your data is safe</span>
+    </div>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>

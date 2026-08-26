@@ -1,0 +1,51 @@
+{
+  "antibadword": {},
+  "antilink": {
+    "120363426871468103@g.us": {
+      "enabled": true,
+      "action": "warn",
+      "allowedDomains": []
+    }
+  },
+  "welcome": {},
+  "goodbye": {},
+  "chatbot": {},
+  "warnings": {
+    "120363426871468103@g.us": {
+      "60903357718617@lid": 1,
+      "104961098645686@lid": 0,
+      "46704111952001@lid": 1
+    }
+  },
+  "statusRestriction": {},
+  "adminlock": {
+    "120363426871468103@g.us": true
+  },
+  "customCommands": {},
+  "pcustome": {},
+  "autoblock": false,
+  "antispam": {},
+  "antigcstatus": {
+    "120363426871468103@g.us": {
+      "action": "warn"
+    }
+  },
+  "sudo": [],
+  "prefix": ".",
+  "antistatus": {
+    "120363426871468103@g.us": {
+      "enabled": true
+    }
+  },
+  "antibot": {
+    "120363426871468103@g.us": {
+      "enabled": false
+    }
+  },
+  "antibot_warnings": {
+    "120363426871468103@g.us": {
+      "220246359208030@lid": 1,
+      "211793511215279@lid": 1
+    }
+  }
+}

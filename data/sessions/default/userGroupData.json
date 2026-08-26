@@ -1,0 +1,17 @@
+{
+  "antibadword": {},
+  "antilink": {},
+  "welcome": {},
+  "goodbye": {},
+  "chatbot": {},
+  "warnings": {},
+  "statusRestriction": {},
+  "adminlock": {},
+  "customCommands": {},
+  "pcustome": {},
+  "autoblock": false,
+  "antispam": {},
+  "antigcstatus": {},
+  "sudo": [],
+  "prefix": "."
+}

@@ -1,0 +1,59 @@
+{
+  "sessions": {
+    "923232391033": {
+      "sent": 1279,
+      "received": 3221,
+      "likes": 0,
+      "connectedAt": 1785783010881
+    },
+    "923193746753": {
+      "sent": 10,
+      "received": 91,
+      "likes": 0,
+      "connectedAt": 1781274951139
+    },
+    "923703417189": {
+      "sent": 25,
+      "received": 486,
+      "likes": 0,
+      "connectedAt": 1786076530068
+    },
+    "923223602988": {
+      "sent": 2628,
+      "received": 3205,
+      "likes": 113,
+      "connectedAt": 1787591107819
+    },
+    "923247514715": {
+      "sent": 65,
+      "received": 3016,
+      "likes": 1,
+      "connectedAt": 1787720767132
+    },
+    "923043514180": {
+      "sent": 388,
+      "received": 4013,
+      "likes": 1,
+      "connectedAt": 1787764754360
+    },
+    "923242829724": {
+      "sent": 72,
+      "received": 1689,
+      "likes": 0,
+      "connectedAt": 1787660769852
+    },
+    "224624822819": {
+      "sent": 96,
+      "received": 1653,
+      "likes": 0,
+      "connectedAt": 1787587149195
+    },
+    "923494420992": {
+      "sent": 60,
+      "received": 1001,
+      "likes": 0,
+      "connectedAt": 1787591107729
+    }
+  },
+  "totalLikes": 115
+}

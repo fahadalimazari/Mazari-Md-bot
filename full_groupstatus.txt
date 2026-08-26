@@ -1,0 +1,311 @@
+Created At: 2026-08-21T05:51:26Z
+Completed At: 2026-08-21T05:51:26Z
+File Path: `file:///c:/Users/Fahad%20Mazari/Desktop/MazariBot-main/MazariBot-main/commands/groupstatus.js`
+Total Lines: 303
+Total Bytes: 14803
+Showing lines 1 to 303
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: const { downloadContentFromMessage, generateWAMessageContent, generateWAMessageFromContent } = require('@whiskeysockets/baileys');
+2: const isAdmin = require('../lib/isAdmin');
+3: const isOwnerOrSudo = require('../lib/isOwner');
+4: const { getGroupMetadata } = require('../lib/myfunc');
+5: 
+6: /**
+7:  * .groupstatus / .gpstatus / .gstatus command
+8:  * Posts a status update specifically for the group (shows up as a ring around the group profile logo).
+9:  */
+10: async function groupstatusCommand(sock, chatId, senderId, message, args) {
+11:     try {
+12:         console.log(`[GROUP-STATUS] Command triggered by ${senderId} in ${chatId}`);
+13: 
+14:         const isGroup = chatId.endsWith('@g.us');
+15:         const isOwner = await isOwnerOrSudo(senderId, sock, chatId);
+16: 
+17:         // 1. Group / Permission checks
+18:         if (isGroup) {
+19:             const { isSenderAdmin, isBotAdmin } = await isAdmin(sock, chatId, senderId);
+20:             if (!isSenderAdmin && !isOwner) {
+21:                 console.log('[GROUP-STATUS] Failed: Unauthorized user');
+22:                 return await sock.sendMessage(chatId, { text: '❌ Only group admins or bot owner can use this command' }, { quoted: message });
+23:             }
+24: 
+25:             // Check if group is closed for chat (announcement mode)
+26:             const metadata = await getGroupMetadata(sock, chatId);
+27:             const isClosed = metadata?.announce === true || metadata?.announce === 'announcement';
+28:             if (isClosed && !isBotAdmin) {
+29:                 console.log('[GROUP-STATUS] Failed: Group is closed for chat and bot is not admin');
+30:                 return await sock.sendMessage(chatId, { text: '❌ The group is closed for chat (Only Admins can send messages), and the bot is not an admin. Please promote the bot to admin to post group status.' }, { quoted: message });
+31:             }
+32:         } else {
+33:             // Private chat - only owner/sudo can trigger global group status broadcast
+34:             if (!isOwner) {
+35:                 console.log('[GROUP-STATUS] Failed: Private chat unauthorized trigger');
+36:                 return await sock.sendMessage(chatId, { text: '❌ Only the bot owner or sudo can use this command in private chat' }, { quoted: message });
+37:             }
+38:         }
+39: 
+40:         // 2. Check for replied media or text
+41:         const quoted = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+42:         const textArg = args.join(' ').trim();
+43: 
+44:         let content = null;
+45: 
+46:         if (quoted) {
+47:             // Replied to a message - extract media or text
+48:             const contentUnpacked = quoted.viewOnceMessageV2?.message || quoted.viewOnceMessage?.message || quoted;
+49:             
+50:             let mediaType = '';
+51:             let mediaKey = null;
+52: 
+53:             if (contentUnpacked.imageMessage) {
+54:                 mediaType = 'image';
+55:                 mediaKey = contentUnpacked.imageMessage;
+56:             } else if (contentUnpacked.videoMessage) {
+57:                 mediaType = 'video';
+58:                 mediaKey = contentUnpacked.videoMessage;
+59:             } else if (contentUnpacked.audioMessage) {
+60:                 mediaType = 'audio';
+61:                 mediaKey = contentUnpacked.audioMessage;
+62:             }
+63: 
+64:             if (mediaKey) {
+65:                 await sock.sendMessage(chatId, { text: `⏳ Downloading and uploading media to group status...` }, { quoted: message });
+66: 
+67:                 // Download media buffer
+68:                 const stream = await downloadContentFromMessage(mediaKey, mediaType);
+69:                 let buffer = Buffer.from([]);
+70:                 for await (const chunk of stream) {
+71:                     buffer = Buffer.concat([buffer, chunk]);
+72:                 }
+73: 
+74:                 if (buffer.length === 0) {
+75:                     throw new Error('Downloaded media buffer is empty');
+76:                 }
+77: 
+78:                 // Generate WA Message Content (handles uploading to WA servers)
+79:                 const mediaGen = {};
+80:                 let statusSourceType = 4; // default to TEXT
+81:                 
+82:                 if (mediaType === 'image') {
+83:                     mediaGen.image = buffer;
+84:                     if (textArg) mediaGen.caption = textArg;
+85:                     statusSourceType = 0; // IMAGE
+86:                 } else if (mediaType === 'video') {
+87:                     mediaGen.video = buffer;
+88:                     if (textArg) mediaGen.caption = textArg;
+89:                     statusSourceType = 1; // VIDEO
+90:                 } else if (mediaType === 'audio') {
+91:                     mediaGen.audio = buffer;
+92:                     mediaGen.mimetype = mediaKey.mimetype || 'audio/mp4';
+93:                     mediaGen.ptt = true;
+94:                     statusSourceType = 3; // AUDIO
+95:                 }
+96: 
+97:                 content = await generateWAMessageContent(mediaGen, { upload: sock.waUploadToServer });
+98:                 
+99:                 // Inject context info for group status metadata into inner media message
+100:                 const messageType = Object.keys(content)[0];
+101:                 if (messageType && content[messageType]) {
+102:                     content[messageType].contextInfo = {
+103:                         ...(content[messageType].contextInfo || {}),
+104:                         isGroupStatus: true,
+105:                         statusSourceType: statusSourceType,
+106:                         statusAttributions: [
+107:                             {
+108:                                 groupStatus: {
+109:                                     authorJid: senderId
+110:                                 }
+111:                             }
+112:                         ]
+113:                     };
+114:                 }
+115:             } else {
+116:                 // Non-media message reply (text, document, buttons, templates, etc.)
+117:                 const quotedText = contentUnpacked.conversation ||
+118:                                    contentUnpacked.extendedTextMessage?.text ||
+119:                                    contentUnpacked.imageMessage?.caption ||
+120:                                    contentUnpacked.videoMessage?.caption ||
+121:                                    contentUnpacked.documentMessage?.caption ||
+122:                                    contentUnpacked.documentMessage?.fileName ||
+123:                                    contentUnpacked.documentMessage?.title ||
+124:                                    contentUnpacked.caption ||
+125:                                    contentUnpacked.text ||
+126:                                    contentUnpacked.contentText ||
+127:                                    contentUnpacked.selectedDisplayText ||
+128:                                    contentUnpacked.title ||
+129:                                    '';
+130:                 const statusText = textArg || quotedText;
+131:                 if (!statusText) {
+132:                     console.log('[GROUP-STATUS] Failed: Quoted message has no text and no text argument was provided');
+133:                     return await sock.sendMessage(chatId, { text: '❌ Please provide text or reply to a message with text/media to set a group status.' }, { quoted: message });
+134:                 }
+135: 
+136:                 // Text status configuration
+137:                 content = {
+138:                     extendedTextMessage: {
+139:                         text: statusText,
+140:                         backgroundArgb: 4278241280, // Black color (Alpha: 255, R: 0, G: 0, B: 0)
+141:                         font: 1,
+142:                         contextInfo: {
+143:                             isGroupStatus: true,
+144:                             statusSourceType: 4, // TEXT
+145:                             statusAttributions: [
+146:                                 {
+147:                                     groupStatus: {
+148:                                         authorJid: senderId
+149:                                     }
+150:                                 }
+151:                             ]
+152:                         }
+153:                     }
+154:                 };
+155:             }
+156:         } else {
+157:             // No media quoted - send text status
+158:             if (!textArg) {
+159:                 console.log('[GROUP-STATUS] Failed: No content provided');
+160:                 return await sock.sendMessage(chatId, { text: '❌ Please provide text or reply to media to set a group status.\nExample: `.groupstatus Hello group!`' }, { quoted: message });
+161:             }
+162: 
+163:             // Text status configuration
+164:             content = {
+165:                 extendedTextMessage: {
+166:                     text: textArg,
+167:                     backgroundArgb: 4278241280, // Black color (Alpha: 255, R: 0, G: 0, B: 0)
+168:                     font: 1,
+169:                     contextInfo: {
+170:                         isGroupStatus: true,
+171:                         statusSourceType: 4, // TEXT
+172:                         statusAttributions: [
+173:                             {
+174:                                 groupStatus: {
+175:                                     authorJid: senderId
+176:                                 }
+177:                             }
+178:                         ]
+179:                     }
+180:                 }
+181:             };
+182:         }
+183: 
+184:         if (!content) {
+185:             throw new Error('Failed to generate message content');
+186:         }
+187: 
+188:         // 3. Determine targets
+189:         let targetGroupJids = [];
+190:         let groupMetadata = null;
+191:         if (isGroup) {
+192:             targetGroupJids = [chatId];
+193:         } else {
+194:             console.log('[GROUP-STATUS] Fetching participating groups for global broadcast...');
+195:             groupMetadata = await sock.groupFetchAllParticipating();
+196:             targetGroupJids = Object.keys(groupMetadata);
+197:             if (targetGroupJids.length === 0) {
+198:                 return await sock.sendMessage(chatId, { text: '❌ The bot is not in any groups.' }, { quoted: message });
+199:             }
+200:             await sock.sendMessage(chatId, { text: `⏳ Found ${targetGroupJids.length} groups. Broadcasting status update...` }, { quoted: message });
+201:         }
+202: 
+203:         let successCount = 0;
+204:         let failCount = 0;
+205:         let skippedCount = 0;
+206: 
+207:         for (const targetJid of targetGroupJids) {
+208:             try {
+209:                 // If broadcasting, check if the group is closed and the bot is not admin
+210:                 if (!isGroup && groupMetadata) {
+211:                     const metadata = groupMetadata[targetJid];
+212:                     const isClosed = metadata?.announce === true || metadata?.announce === 'announcement';
+213:                     
+214:                     if (isClosed) {
+215:                         const participants = metadata?.participants || [];
+216:                         const botId = sock.user?.id || '';
+217:                         const botLid = sock.user?.lid || '';
+218:                         const botNumber = botId.includes(':') ? botId.split(':')[0] : (botId.includes('@') ? botId.split('@')[0] : botId);
+219:                         const botIdWithoutSuffix = botId.includes('@') ? botId.split('@')[0] : botId;
+220:                         const botLidNumeric = botLid.includes(':') ? botLid.split(':')[0] : (botLid.includes('@') ? botLid.split('@')[0] : botLid);
+221:                         const botLidWithoutSuffix = botLid.includes('@') ? botLid.split('@')[0] : botLid;
+222:                         
+223:                         const isBotAdmin = participants.some(p => {
+224:                             const pPhoneNumber = p.phoneNumber ? p.phoneNumber.split('@')[0] : '';
+225:                             const pId = p.id ? p.id.split('@')[0] : '';
+226:                             const pLid = p.lid ? p.lid.split('@')[0] : '';
+227:                             const pFullId = p.id || '';
+228:                             const pFullLid = p.lid || '';
+229:                             const pLidNumeric = pLid.includes(':') ? pLid.split(':')[0] : pLid;
+230:                             
+231:                             const botMatches = (
+232:                                 botId === pFullId || 
+233:                                 botId === pFullLid || 
+234:                                 botLid === pFullLid || 
+235:                                 botLidNumeric === pLidNumeric || 
+236:                                 botLidWithoutSuffix === pLid || 
+237:                                 botNumber === pPhoneNumber || 
+238:                                 botNumber === pId || 
+239:                                 botIdWithoutSuffix === pPhoneNumber || 
+240:                                 botIdWithoutSuffix === pId || 
+241:                                 (botLid && botLid.split('@')[0].split(':')[0] === pLid)
+242:                             );
+243:                             return botMatches && (p.admin === 'admin' || p.admin === 'superadmin');
+244:                         });
+245:                         
+246:                         if (!isBotAdmin) {
+247:                             console.log(`[GROUP-STATUS] Skipping ${targetJid}: Closed group and bot is not admin`);
+248:                             skippedCount++;
+249:                             continue;
+250:                         }
+251:                     }
+252:                 }
+253: 
+254:                 // Send the groupStatusMessage via relayMessage to bypass generateWAMessageContent validation
+255:                 console.log(`[GROUP-STATUS] Relaying group status to: ${targetJid}`);
+256:                 const messageToSend = generateWAMessageFromContent(
+257:                     targetJid,
+258:                     {
+259:                         groupStatusMessage: {
+260:                             message: content
+261:                         },
+262:                         groupStatusMessageV2: {
+263:                             message: content
+264:                         }
+265:                     },
+266:                     {
+267:                         userJid: sock.user.id
+268:                     }
+269:                 );
+270: 
+271:                 await sock.relayMessage(targetJid, messageToSend.message, {
+272:                     messageId: messageToSend.key.id
+273:                 });
+274:                 successCount++;
+275: 
+276:                 // Add a minor delay if broadcasting to multiple groups to prevent spam blocks
+277:                 if (!isGroup && targetGroupJids.length > 1) {
+278:                     await new Promise(resolve => setTimeout(resolve, 1500));
+279:                 }
+280:             } catch (err) {
+281:                 console.error(`[GROUP-STATUS] Failed to send status to ${targetJid}:`, err);
+282:                 failCount++;
+283:             }
+284:         }
+285: 
+286:         if (isGroup) {
+287:             if (successCount > 0) {
+288:                 await sock.sendMessage(chatId, { text: '✅ Group Status posted successfully! Tap the group icon to view.' }, { quoted: message });
+289:             } else {
+290:                 throw new Error('Failed to relay message to the group');
+291:             }
+292:         } else {
+293:             await sock.sendMessage(chatId, { text: `✅ Status broadcast complete!\n🟢 Success: ${successCount} groups\n🟡 Skipped (Closed + Bot Not Admin): ${skippedCount} groups\n🔴 Failed: ${failCount} groups` }, { quoted: message });
+294:         }
+295: 
+296:     } catch (error) {
+297:         console.error('[GROUP-STATUS] Critical Error:', error);
+298:         await sock.sendMessage(chatId, { text: `❌ Failed to set group status.\nError: ${error.message}` }, { quoted: message });
+299:     }
+300: }
+301: 
+302: module.exports = groupstatusCommand;
+303: 
+The above content shows the entire, complete file contents of the requested file.

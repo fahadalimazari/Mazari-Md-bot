@@ -1,0 +1,19 @@
+{
+  "antibadword": {},
+  "antilink": {},
+  "welcome": {},
+  "goodbye": {},
+  "chatbot": {},
+  "warnings": {},
+  "statusRestriction": {},
+  "adminlock": {
+    "120363411427287248@g.us": true
+  },
+  "customCommands": {},
+  "pcustome": {},
+  "autoblock": false,
+  "antispam": {},
+  "antigcstatus": {},
+  "sudo": [],
+  "prefix": "."
+}

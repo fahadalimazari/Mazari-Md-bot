@@ -1,0 +1,24 @@
+# Node modules
+node_modules/
+
+# Environment files
+.env
+
+# Baileys session files (standard auth names)
+auth/
+*auth_info.json
+*session.json
+mazari_session/
+
+# Repository Maintenance
+baileys_store.json
+temp/
+tmp/
+*.zip
+*.bin
+
+# OS specific files
+.DS_Store
+Thumbs.db
+*.exe  
+ 

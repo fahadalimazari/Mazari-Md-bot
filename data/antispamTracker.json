@@ -1,0 +1,49 @@
+{
+  "120363407517350313@g.us": {
+    "30825651400921@lid": {
+      "lastMessage": "chek kr phr bta mojya",
+      "repeatCount": 1,
+      "lastTime": 1787332969836,
+      "messageKeys": [
+        {
+          "remoteJid": "120363407517350313@g.us",
+          "fromMe": false,
+          "id": "3EB0516ACD3F7A51F81116",
+          "participant": "30825651400921@lid",
+          "participantAlt": "923252025304@s.whatsapp.net",
+          "addressingMode": "lid"
+        }
+      ]
+    },
+    "37899395399864@lid": {
+      "lastMessage": "https://chat.whatsapp.com/invite/gb3mpv86nmhfvzdenwyqv7",
+      "repeatCount": 1,
+      "lastTime": 1787386516301,
+      "messageKeys": [
+        {
+          "remoteJid": "120363407517350313@g.us",
+          "fromMe": false,
+          "id": "ACF7035C6AF18DF154CFCD8D43F8EA64",
+          "participant": "37899395399864@lid",
+          "participantAlt": "923292823218@s.whatsapp.net",
+          "addressingMode": "lid"
+        }
+      ]
+    },
+    "108624840028219@lid": {
+      "lastMessage": "oh jeooo",
+      "repeatCount": 1,
+      "lastTime": 1787338926144,
+      "messageKeys": [
+        {
+          "remoteJid": "120363407517350313@g.us",
+          "fromMe": false,
+          "id": "A5E260FCEEE44507C2F2FE65CAE8A54D",
+          "participant": "108624840028219@lid",
+          "participantAlt": "923376538456@s.whatsapp.net",
+          "addressingMode": "lid"
+        }
+      ]
+    }
+  }
+}

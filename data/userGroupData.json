@@ -1,0 +1,115 @@
+{
+  "users": [],
+  "groups": [],
+  "antilink": {
+    "120363419848730279@g.us": {
+      "enabled": true,
+      "action": "delete"
+    },
+    "120363423039542713@g.us": {
+      "enabled": true,
+      "action": "delete"
+    },
+    "120363407517350313@g.us": {
+      "enabled": true,
+      "action": "warn",
+      "allowedDomains": []
+    },
+    "120363427834691768@g.us": {
+      "enabled": true,
+      "action": "warn",
+      "allowedDomains": []
+    },
+    "120363409471344068@g.us": {
+      "enabled": true,
+      "action": "warn",
+      "allowedDomains": []
+    }
+  },
+  "antibadword": {},
+  "warnings": {
+    "120363423039542713@g.us": {
+      "107473637793852@lid": 1
+    },
+    "120363407517350313@g.us": {
+      "37899395399864@lid": 0
+    },
+    "120363427834691768@g.us": {
+      "124425940816093@lid": 1
+    }
+  },
+  "sudo": [
+    "923376538456@s.whatsapp.net"
+  ],
+  "welcome": {
+    "120363407517350313@g.us": {
+      "enabled": true,
+      "message": "Welcome {user} to {group}! 🎉",
+      "channelId": ""
+    },
+    "120363429953857297@g.us": {
+      "enabled": true,
+      "message": "Welcome to Group",
+      "channelId": ""
+    }
+  },
+  "goodbye": {},
+  "chatbot": {},
+  "autoReaction": false,
+  "statusRestriction": {
+    "120363423039542713@g.us": true
+  },
+  "adminlock": {
+    "120363407517350313@g.us": true,
+    "120363423039542713@g.us": true,
+    "120363427834691768@g.us": true,
+    "120363410904970180@g.us": true,
+    "120363409471344068@g.us": false
+  },
+  "customCommands": {},
+  "autoblock": true,
+  "antispam": {
+    "120363407517350313@g.us": true
+  },
+  "pcustome": {
+    "120363407517350313@g.us": [
+      "menu",
+      "tagall"
+    ]
+  },
+  "antitag": {
+    "120363407517350313@g.us": {
+      "enabled": true,
+      "action": "delete"
+    }
+  },
+  "pdm": {
+    "120363427834691768@g.us": true,
+    "120363410904970180@g.us": false
+  },
+  "antistatus": {
+    "120363410904970180@g.us": {
+      "enabled": true
+    },
+    "120363409471344068@g.us": {
+      "enabled": true
+    }
+  },
+  "antigcstatus": {
+    "120363407517350313@g.us": {
+      "action": "warn"
+    },
+    "120363410904970180@g.us": {
+      "action": "warn"
+    }
+  },
+  "antibot": {
+    "120363410904970180@g.us": {
+      "enabled": true
+    },
+    "120363407517350313@g.us": {
+      "enabled": true
+    }
+  },
+  "prefix": "."
+}
