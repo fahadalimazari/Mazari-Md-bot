@@ -262,58 +262,45 @@ async function launch() {
     }, HEARTBEAT_INTERVAL_MS);
   }
 
-
-  // 2. Autonomous start with target phone number
-  let primaryPhone = process.env.OWNER_NUMBER || settings.ownerNumber || '923043514180';
-  if (!primaryPhone) {
-    primaryPhone = await question(chalk.green('Enter your WhatsApp Phone Number (with country code, e.g., 923...): '));
-  }
-  
-  // Only request pairing code if session directory doesn't exist (i.e. fresh start)
-  const primarySessionPath = path.join(sessionDir, primaryPhone);
-  const isNewSession = !fs.existsSync(primarySessionPath);
-  
-  console.log(chalk.yellow(`\n🔄 Auto-initializing session for ${primaryPhone}...`));
-  // DO NOT auto-generate pairing code on startup. Wait for web request.
-  await initSession(primaryPhone, { usePairingCode: false });
-
-  // 3. Initialize/Resume other existing sessions
+  // 2. Initialize/Resume existing sessions
+  let sessionsLoaded = 0;
   if (dbConnected) {
     const pairedSessions = dbSessions || [];
     if (pairedSessions.length > 0) {
       console.log(chalk.blue(`📡 Resuming ${pairedSessions.length} active sessions from database...`));
       for (const session of pairedSessions) {
         const dbPhone = session.phone_number.replace(/[^0-9]/g, '');
-        if (dbPhone !== primaryPhone) {
-          initSession(dbPhone).catch(err => console.error(`Failed to init session ${dbPhone}:`, err));
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2s stagger
-        }
-      }
-    } else {
-      const localSessions = fs.readdirSync(sessionDir).filter(name => fs.lstatSync(path.join(sessionDir, name)).isDirectory());
-      const sessionsToLoad = localSessions.filter(phone => phone !== primaryPhone);
-      if (sessionsToLoad.length > 0) {
-        console.log(chalk.blue(`📁 Resuming ${sessionsToLoad.length} sessions from local storage...`));
-        for (const phone of sessionsToLoad) {
-          initSession(phone).catch(err => console.error(`Failed to init local session ${phone}:`, err));
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2s stagger
-        }
-      } else {
-        console.log(chalk.red('❌ No other active sessions found.'));
-      }
-    }
-  } else {
-    const localSessions = fs.readdirSync(sessionDir).filter(name => fs.lstatSync(path.join(sessionDir, name)).isDirectory());
-    const sessionsToLoad = localSessions.filter(phone => phone !== primaryPhone);
-    if (sessionsToLoad.length > 0) {
-      console.log(chalk.blue(`📁 Loading ${sessionsToLoad.length} sessions from local storage...`));
-      for (const phone of sessionsToLoad) {
-        initSession(phone).catch(err => console.error(`Failed to init local session ${phone}:`, err));
+        initSession(dbPhone).catch(err => console.error(`Failed to init session ${dbPhone}:`, err));
+        sessionsLoaded++;
         await new Promise(resolve => setTimeout(resolve, 2000)); // 2s stagger
       }
     } else {
-      console.log(chalk.red('❌ No other active sessions found.'));
+      const localSessions = fs.existsSync(sessionDir) ? fs.readdirSync(sessionDir).filter(name => fs.lstatSync(path.join(sessionDir, name)).isDirectory()) : [];
+      if (localSessions.length > 0) {
+        console.log(chalk.blue(`📁 Resuming ${localSessions.length} sessions from local storage...`));
+        for (const phone of localSessions) {
+          initSession(phone).catch(err => console.error(`Failed to init local session ${phone}:`, err));
+          sessionsLoaded++;
+          await new Promise(resolve => setTimeout(resolve, 2000)); // 2s stagger
+        }
+      }
     }
+  } else {
+    // If no DB connection, just load from local folders
+    const localSessions = fs.existsSync(sessionDir) ? fs.readdirSync(sessionDir).filter(name => fs.lstatSync(path.join(sessionDir, name)).isDirectory()) : [];
+    if (localSessions.length > 0) {
+      console.log(chalk.blue(`📁 Resuming ${localSessions.length} sessions from local storage...`));
+      for (const phone of localSessions) {
+        initSession(phone).catch(err => console.error(`Failed to init local session ${phone}:`, err));
+        sessionsLoaded++;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+  }
+
+  if (sessionsLoaded === 0) {
+    console.log(chalk.yellow(`❌ No active sessions found in database or local storage.`));
+    console.log(chalk.cyan(`🌐 Awaiting new session pairing via Web UI...`));
   }
 
   process.on('uncaughtException', (err) => console.error('💥 Uncaught Exception:', err));
