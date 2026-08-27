@@ -13,9 +13,25 @@ const chalk = require('chalk');
 
 // Global log capturer for Admin Panel
 global.botLogs = [];
+
+function safeStringify(obj) {
+    try {
+        return JSON.stringify(obj, (key, value) => {
+            if (key === 'privKey' || key === 'rootKey' || key === 'remoteIdentityKey' || key === 'encKey' || key === 'macKey') return '[REDACTED]';
+            if (value && typeof value === 'object') {
+                if (value.type === 'Buffer' || Buffer.isBuffer(value)) return '[Buffer]';
+                if (value.constructor && value.constructor.name === 'SessionEntry') return '[SessionEntry]';
+            }
+            return value;
+        });
+    } catch (e) {
+        return '[Unserializable Object]';
+    }
+}
+
 function addLog(args, type = 'info') {
     const time = new Date().toLocaleTimeString();
-    let str = Array.isArray(args) ? args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') : String(args);
+    let str = Array.isArray(args) ? args.map(a => typeof a === 'object' ? safeStringify(a) : String(a)).join(' ') : String(args);
     // Remove ansi color codes from string for clean web display
     str = str.replace(/\x1B\[\d+m/g, '').replace(/\[\d+m/g, '');
     global.botLogs.push({ time, msg: str, type });
@@ -25,15 +41,31 @@ function addLog(args, type = 'info') {
 // Suppress verbose baileys output dynamically to reduce terminal/memory strain
 const originalLog = console.log;
 console.log = function (...args) {
-    if (typeof args[0] === 'string' && args[0].includes('Closing session: SessionEntry')) return;
-    addLog(args, 'info');
-    originalLog.apply(console, args);
+    if (args.some(a => typeof a === 'string' && (a.includes('Closing session:') || a.includes('SessionEntry')))) return;
+    
+    const safeArgs = args.map(a => {
+        if (typeof a === 'object' && a !== null) {
+            if (Buffer.isBuffer(a) || a.type === 'Buffer') return '[Buffer]';
+            if (a.constructor && a.constructor.name === 'SessionEntry') return '[SessionEntry]';
+        }
+        return a;
+    });
+    
+    addLog(safeArgs, 'info');
+    originalLog.apply(console, safeArgs);
 };
 
 const originalError = console.error;
 console.error = function (...args) {
-    addLog(args, 'error');
-    originalError.apply(console, args);
+    const safeArgs = args.map(a => {
+        if (typeof a === 'object' && a !== null) {
+            if (Buffer.isBuffer(a) || a.type === 'Buffer') return '[Buffer]';
+            if (a.constructor && a.constructor.name === 'SessionEntry') return '[SessionEntry]';
+        }
+        return a;
+    });
+    addLog(safeArgs, 'error');
+    originalError.apply(console, safeArgs);
 };
 
 async function launch() {
@@ -296,9 +328,9 @@ async function launch() {
       for (const [phone, state] of sessionStates.entries()) {
           if (state === 'CONNECTED') {
               const sock = sessions.get(phone);
-              // Verify socket is actually alive by checking its internal state
-              if (!sock || !sock.ws || sock.ws.readyState !== 1) { // 1 = OPEN
-                  console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} appears disconnected (ghosting). Automatic recovery is disabled.`));
+              // Trust Baileys connection state instead of aggressive websocket checks that cause false positives
+              if (!sock) {
+                  console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} socket missing. Automatic recovery is disabled.`));
               } else if (!supabase.isMock) {
                   // Session is healthy, broadcast heartbeat to lock out other servers
                   try {
@@ -315,9 +347,14 @@ async function launch() {
       }
       
       // Auto-restart if memory is too high (Safety for t3.micro)
-      const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024;
-      if (memoryUsage > 800) {
-          console.log(chalk.bgRed(`⚠️ [SYSTEM] Memory usage critical (${memoryUsage.toFixed(2)}MB). Performing scheduled restart...`));
+      const memUsage = process.memoryUsage();
+      const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
+      const rssMB = memUsage.rss / 1024 / 1024;
+      
+      console.log(chalk.gray(`📊 [MEMORY] RSS: ${rssMB.toFixed(2)}MB | Heap: ${heapUsedMB.toFixed(2)}MB`));
+      
+      if (heapUsedMB > 800) {
+          console.log(chalk.bgRed(`⚠️ [SYSTEM] Memory usage critical (${heapUsedMB.toFixed(2)}MB). Performing scheduled restart...`));
           process.exit(0); // PM2 will catch this and restart the process fresh
       }
   }, 30 * 1000);
