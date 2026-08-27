@@ -238,8 +238,8 @@ global.promotionInfo = {
 // Load and resize DP image for channel attribution thumbnail
 async function initChannelInfo() {
     try {
-        const dpPath = settings.connectionImagePath;
-        if (dpPath && fs.existsSync(dpPath)) {
+        const dpPath = settings.connectionImagePath ? path.resolve(settings.connectionImagePath) : path.join(__dirname, 'assets/images/DP.jpg');
+        if (fs.existsSync(dpPath)) {
             const buffer = fs.readFileSync(dpPath);
             // Smaller size for better performance and reliability (100x100)
             const thumbBuffer = await reSize(buffer, { width: 100, height: 100 });
@@ -256,7 +256,7 @@ async function initChannelInfo() {
             };
             console.log(`✅ Channel Info with thumbnail (${thumbBuffer?.length || 0} bytes) initialized successfully`);
         } else {
-            console.warn('⚠️ DP.png not found at', dpPath);
+            console.warn('⚠️ DP image not found at', dpPath);
         }
     } catch (error) {
         console.error('Error initializing channelInfo:', error);
