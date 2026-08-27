@@ -347,11 +347,9 @@ async function launch() {
       }
       
       // Auto-restart if memory is too high (Safety for t3.micro)
-      const memUsage = process.memoryUsage();
-      const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
-      const rssMB = memUsage.rss / 1024 / 1024;
-      
-      console.log(chalk.gray(`📊 [MEMORY] RSS: ${rssMB.toFixed(2)}MB | Heap: ${heapUsedMB.toFixed(2)}MB`));
+      const m = process.memoryUsage();
+      const heapUsedMB = m.heapUsed / 1024 / 1024;
+      console.log(chalk.gray(`📊 [MEMORY] RSS: ${(m.rss/1024/1024).toFixed(1)}MB | Heap: ${(m.heapUsed/1024/1024).toFixed(1)}MB | External: ${(m.external/1024/1024).toFixed(1)}MB | ArrayBuffers: ${(m.arrayBuffers/1024/1024).toFixed(1)}MB`));
       
       if (heapUsedMB > 800) {
           console.log(chalk.bgRed(`⚠️ [SYSTEM] Memory usage critical (${heapUsedMB.toFixed(2)}MB). Performing scheduled restart...`));
