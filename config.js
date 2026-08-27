@@ -1,4 +1,5 @@
-﻿require('dotenv').config();
+require('dotenv').config();
+const crypto = require('crypto');
 
 global.APIs = {
     xteam: 'https://api.xteam.xyz',
@@ -23,8 +24,15 @@ global.APIKeys = {
     'https://api-fgmods.ddns.net': 'fg-dylux'
 };
 
+const SERVER_ID = process.env.SERVER_ID || process.env.DYNO || ('local-' + process.pid + '-' + crypto.randomUUID().slice(0, 8));
+const MAX_BOTS_PER_SERVER = parseInt(process.env.MAX_BOTS_PER_SERVER, 10) || 60;
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
+
 module.exports = {
     WARN_COUNT: 3,
     APIs: global.APIs,
-    APIKeys: global.APIKeys
+    APIKeys: global.APIKeys,
+    SERVER_ID,
+    MAX_BOTS_PER_SERVER,
+    INTERNAL_API_KEY
 };
