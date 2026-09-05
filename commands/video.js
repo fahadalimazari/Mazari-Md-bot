@@ -1,4 +1,4 @@
-﻿const yts = require('yt-search');
+const yts = require('yt-search');
 const axios = require('axios');
 const { exec } = require('child_process');
 const fs = require('fs');
@@ -36,8 +36,8 @@ async function videoCommand(sock, chatId, message) {
         let localFilePath = null;
 
         try {
-            // Priority 1: Use local yt-dlp.exe (Most robust)
-            const ytDlpPath = path.join(process.cwd(), 'yt-dlp.exe');
+            // Priority 1: Use local yt-dlp (Most robust)
+            const ytDlpPath = process.platform === 'win32' ? path.join(process.cwd(), 'yt-dlp.exe') : 'yt-dlp';
             if (fs.existsSync(ytDlpPath)) {
                 try {
                     const tempDir = path.join(process.cwd(), 'temp');

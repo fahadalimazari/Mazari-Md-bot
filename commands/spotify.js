@@ -5,9 +5,11 @@ const path = require('path');
 
 function downloadSong(url, outputFile) {
     return new Promise((resolve, reject) => {
-        const exePath = path.join(process.cwd(), 'yt-dlp.exe');
+        const exePath = process.platform === 'win32' ? path.join(process.cwd(), 'yt-dlp.exe') : 'yt-dlp';
         const ffmpegPath = process.cwd();
-        const cmd = `"${exePath}" -x --audio-format mp3 --ffmpeg-location "${ffmpegPath}" --js-runtimes node -o "${outputFile}" "${url}"`;
+        const cmd = process.platform === 'win32'
+            ? `"${exePath}" -x --audio-format mp3 --ffmpeg-location "${ffmpegPath}" --js-runtimes node -o "${outputFile}" "${url}"`
+            : `"${exePath}" -x --audio-format mp3 --js-runtimes node -o "${outputFile}" "${url}"`;
 
         exec(cmd, (error, stdout, stderr) => {
             if (error) {

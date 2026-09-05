@@ -1,10 +1,20 @@
 {
   "antibadword": {},
-  "antilink": {},
+  "antilink": {
+    "120363426871468103@g.us": {
+      "enabled": true,
+      "action": "warn",
+      "allowedDomains": []
+    }
+  },
   "welcome": {},
   "goodbye": {},
   "chatbot": {},
-  "warnings": {},
+  "warnings": {
+    "120363426871468103@g.us": {
+      "135876273303712@lid": 1
+    }
+  },
   "statusRestriction": {},
   "adminlock": {
     "120363411427287248@g.us": true
@@ -13,7 +23,16 @@
   "pcustome": {},
   "autoblock": false,
   "antispam": {},
-  "antigcstatus": {},
+  "antigcstatus": {
+    "120363426871468103@g.us": {
+      "action": "kick"
+    }
+  },
   "sudo": [],
-  "prefix": "."
+  "prefix": ".",
+  "antistatus": {
+    "120363426871468103@g.us": {
+      "enabled": true
+    }
+  }
 }

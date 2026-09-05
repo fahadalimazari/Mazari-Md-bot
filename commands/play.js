@@ -58,8 +58,8 @@ async function playCommand(sock, chatId, message) {
         let localFilePath = null;
 
         try {
-            const ytDlpPath = path.join(process.cwd(), 'yt-dlp.exe');
-            const ffmpegPath = path.join(process.cwd(), 'ffmpeg.exe');
+            const ytDlpPath = process.platform === 'win32' ? path.join(process.cwd(), 'yt-dlp.exe') : 'yt-dlp';
+            const ffmpegPath = process.platform === 'win32' ? path.join(process.cwd(), 'ffmpeg.exe') : 'ffmpeg';
 
             if (fs.existsSync(ytDlpPath)) {
                 try {
