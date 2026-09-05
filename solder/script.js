@@ -2,7 +2,7 @@
 // MAZARI MD – Pairing Frontend Logic (vanilla JS)
 // ---------------------------------------------------------------
 
-const API_URL = '/api/session/pair'; // Adjust if your backend uses a different endpoint
+const API_URL = 'https://mazari-bot-01.herokuapp.com/api/session/pair'; // Direct Heroku backend link
 
 const phoneInput = document.getElementById('phone-input');
 const pairBtn = document.getElementById('pair-btn');
