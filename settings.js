@@ -15,22 +15,18 @@ const settings = {
   updateZipUrl: "",
   channelLink: "https://whatsapp.com/channel/0029Vb6GUj8BPzjOWNfnhm1B",
   channelLink2: "https://whatsapp.com/channel/0029Vb6GUj8BPzjOWNfnhm1B",
-  newsletterJid: "120363408484963246@newsletter",
+  newsletterJid: "",
   // ========================================
   // AUTO FOLLOW CHANNELS
   // EXISTING SYSTEM — DO NOT MODIFY
   // ========================================
-  newsletters: [
-    '120363408484963246@newsletter'
-  ],
+  newsletters: [],
 
   // ========================================
   // AUTO REACT CHANNELS
   // NEW SYSTEM
   // ========================================
-  autoReactChannels: [
-    '120363408484963246@newsletter'
-  ],
+  autoReactChannels: [],
   autoReactEmojis: [
     "❤️", "🩷", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎",
     "💕", "💞", "💓", "💗", "💖", "💝", "💘", "💟", "🫶", "🫰",
