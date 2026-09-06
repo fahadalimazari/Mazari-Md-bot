@@ -49,13 +49,22 @@ async function blockCommand(sock, chatId, message, args = []) {
         }
 
         try {
-            await sock.updateBlockStatus(targetJid, 'block');
+            console.log('[BLOCK] target JID:', targetJid);
+            console.log('[BLOCK] sessionId:', sock?.user?.id);
+
+            const result = await sock.updateBlockStatus(targetJid, 'block');
+            
+            console.log('[BLOCK] success:', result);
+
             return sock.sendMessage(chatId, {
                 text: `╭─〔 ⎔ 𝗕𝗟𝗢𝗖𝗞 ⎔ 〕─\n│ 𝗦𝗧𝗔𝗧𝗨𝗦 : 𝗕𝗟𝗢𝗖𝗞𝗘𝗗 ✓\n│ 𝗨𝗦𝗘𝗥 : @${targetJid.split('@')[0]}\n╰────────────────────╯`,
                 mentions: [targetJid]
             });
         } catch (apiErr) {
-            console.error(`[BLOCK ERROR] Failed to block ${targetJid}:`, apiErr);
+            console.error('[BLOCK] FAILED:', apiErr);
+            console.error('[BLOCK] message:', apiErr?.message);
+            console.error('[BLOCK] stack:', apiErr?.stack);
+            
             return sock.sendMessage(chatId, {
                 text: '╭─〔 ⎔ 𝗕𝗟𝗢𝗖𝗞 ⎔ 〕─\n│ 𝗦𝗧𝗔𝗧𝗨𝗦 : 𝗙𝗔𝗜𝗟𝗘𝗗 ✗\n│ 𝗥𝗘𝗔𝗦𝗢𝗡 : 𝗕𝗟𝗢𝗖𝗞 𝗙𝗔𝗜𝗟𝗘𝗗\n╰────────────────────╯'
             });

@@ -49,15 +49,22 @@ async function unblockCommand(sock, chatId, message, args = []) {
         }
 
         try {
-            await sock.updateBlockStatus(targetJid, 'unblock');
+            console.log('[UNBLOCK] target JID:', targetJid);
+            console.log('[UNBLOCK] sessionId:', sock?.user?.id);
+
+            const result = await sock.updateBlockStatus(targetJid, 'unblock');
+            
+            console.log('[UNBLOCK] success:', result);
+
             return sock.sendMessage(chatId, {
                 text: `╭─〔 ⎔ 𝗨𝗡𝗕𝗟𝗢𝗖𝗞 ⎔ 〕─\n│ 𝗦𝗧𝗔𝗧𝗨𝗦 : 𝗨𝗡𝗕𝗟𝗢𝗖𝗞𝗘𝗗 ✓\n│ 𝗨𝗦𝗘𝗥 : @${targetJid.split('@')[0]}\n╰────────────────────╯`,
                 mentions: [targetJid]
             });
         } catch (apiErr) {
-            console.error(`[UNBLOCK ERROR] Failed to unblock ${targetJid}:`, apiErr);
-            // WhatsApp API often fails silently if they are already unblocked, or throws.
-            // But we can format the error message exactly as requested.
+            console.error('[UNBLOCK] FAILED:', apiErr);
+            console.error('[UNBLOCK] message:', apiErr?.message);
+            console.error('[UNBLOCK] stack:', apiErr?.stack);
+            
             return sock.sendMessage(chatId, {
                 text: '╭─〔 ⎔ 𝗨𝗡𝗕𝗟𝗢𝗖𝗞 ⎔ 〕─\n│ 𝗦𝗧𝗔𝗧𝗨𝗦 : 𝗙𝗔𝗜𝗟𝗘𝗗 ✗\n│ 𝗥𝗘𝗔𝗦𝗢𝗡 : 𝗨𝗡𝗕𝗟𝗢𝗖𝗞 𝗙𝗔𝗜𝗟𝗘𝗗\n╰────────────────────╯'
             });
