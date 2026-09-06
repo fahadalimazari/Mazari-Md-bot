@@ -244,15 +244,16 @@ async function launch() {
         console.log(chalk.green('✅ Supabase connection successful.'));
         dbConnected = true;
         
-        // Auto-heal logic: Revive sessions that have backups but were falsely marked as not paired
+        // Auto-heal logic: Revive ALL sessions that have backups
         dbSessions = data.filter(row => {
-          if (row.is_paired) return true;
           if (row.session_data && row.session_data.backup && Object.keys(row.session_data.backup).length > 0) {
-            console.log(chalk.green(`🛠️ [AUTO-HEAL] Reviving falsely unpaired session ${row.phone_number}...`));
-            supabase.from('bot_sessions').update({ is_paired: true }).eq('phone_number', row.phone_number).then();
+            if (!row.is_paired) {
+                console.log(chalk.green(`🛠️ [AUTO-HEAL] Reviving falsely unpaired session ${row.phone_number}...`));
+                supabase.from('bot_sessions').update({ is_paired: true }).eq('phone_number', row.phone_number).then();
+            }
             return true;
           }
-          return false;
+          return row.is_paired;
         });
       }
     } catch (err) {

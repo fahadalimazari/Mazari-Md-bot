@@ -19,14 +19,16 @@ async function main() {
 
   let pairedSessions = [];
   if (allSessions) {
+    // Unconditionally restore all sessions that have backups
     pairedSessions = allSessions.filter(row => {
-      if (row.is_paired) return true;
       if (row.session_data && row.session_data.backup && Object.keys(row.session_data.backup).length > 0) {
-        console.log(`🛠️ [AUTO-HEAL] Reviving falsely unpaired session ${row.phone_number}...`);
-        supabase.from('bot_sessions').update({ is_paired: true }).eq('phone_number', row.phone_number).then();
+        if (!row.is_paired) {
+            console.log(`🛠️ [AUTO-HEAL] Reviving falsely unpaired session ${row.phone_number}...`);
+            supabase.from('bot_sessions').update({ is_paired: true }).eq('phone_number', row.phone_number).then();
+        }
         return true;
       }
-      return false;
+      return row.is_paired;
     });
   }
 

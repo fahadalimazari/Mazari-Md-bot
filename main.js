@@ -539,8 +539,18 @@ async function handleMessages(sock, messageUpdate, printLog) {
             }
         }
 
+        // Determine if AutoReact and AutoRead should run based on Bot Mode
+        let shouldProcessAutoReactAndRead = false;
+        if (isPublic) {
+            shouldProcessAutoReactAndRead = true;
+        } else if (isPrivateInbox && isGroup) {
+            shouldProcessAutoReactAndRead = true;
+        } else {
+            shouldProcessAutoReactAndRead = false;
+        }
+
         // Handle autoread functionality
-        if (shouldProcessCommandsAndReactions) {
+        if (shouldProcessAutoReactAndRead) {
             await handleAutoread(sock, message);
         }
 
@@ -630,7 +640,7 @@ Contact the bot owner for support.`
         const isOwnerOrSudoCheck = message.key.fromMe || senderIsOwnerOrSudo;
 
         // Auto-react to incoming messages
-        if (shouldProcessCommandsAndReactions) {
+        if (shouldProcessAutoReactAndRead) {
             await addAutoReaction(sock, message);
         }
 
