@@ -76,18 +76,31 @@ function isAutoreactEnabled(sock) {
 // React function
 async function addAutoReaction(sock, message) {
     try {
-        if (!isAutoreactEnabled(sock)) return;
-        if (!message?.key?.id) return;
-        if (message.key.fromMe) return;
+        if (!isAutoreactEnabled(sock)) {
+            return;
+        }
+        if (!message?.key?.id) {
+            return;
+        }
+        
+        // Remove early return on fromMe to allow owner testing
+        // if (message.key.fromMe) return;
 
         const remoteJid = message.key.remoteJid;
-        if (!remoteJid || remoteJid === 'status@broadcast') return;
+        if (!remoteJid || remoteJid === 'status@broadcast') {
+            return;
+        }
 
         const sessionId = getSessionId(sock);
         const config = readSessionData(sessionId, 'react.json', defaultData);
-        const emojis = Array.isArray(config.reactEmojis) && config.reactEmojis.length > 0
+        let emojis = Array.isArray(config.reactEmojis) && config.reactEmojis.length > 0
             ? config.reactEmojis
             : defaultData.reactEmojis;
+            
+        // Fallback for corrupted emojis
+        if (emojis.some(e => e.includes('dY'))) {
+            emojis = defaultData.reactEmojis;
+        }
 
         const emoji = emojis[Math.floor(Math.random() * emojis.length)];
 
