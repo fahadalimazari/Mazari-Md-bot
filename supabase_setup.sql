@@ -93,3 +93,9 @@ BEGIN
     RETURN jsonb_build_object('claimed', true, 'owner', p_new_owner, 'last_active', v_now);
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION update_is_paired(p_phone_number text, p_is_paired boolean) RETURNS void LANGUAGE sql SECURITY DEFINER AS $$ UPDATE bot_sessions SET is_paired = p_is_paired WHERE phone_number = p_phone_number; $$;
+
+CREATE OR REPLACE FUNCTION update_session_data(p_phone_number text, p_session_data jsonb) RETURNS void LANGUAGE sql SECURITY DEFINER AS $$ UPDATE bot_sessions SET session_data = p_session_data WHERE phone_number = p_phone_number; $$;
+
+CREATE OR REPLACE FUNCTION get_all_sessions() RETURNS TABLE(phone_number text, session_data jsonb, is_paired boolean) LANGUAGE sql SECURITY DEFINER AS $$ SELECT phone_number, session_data, is_paired FROM bot_sessions; $$;

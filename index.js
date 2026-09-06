@@ -237,7 +237,12 @@ async function launch() {
     console.log(chalk.yellow('📡 Checking database connectivity...'));
     try {
       // Fetch ALL sessions to auto-heal the ones broken by the previous upsert bug
-      const { data, error: healthError } = await supabase.from('bot_sessions').select('phone_number, session_data, is_paired');
+      // We use RPC to bypass RLS in case the user has RLS enabled
+      let result = await supabase.rpc('get_all_sessions');
+      if (result.error && result.error.message.includes('function')) {
+          result = await supabase.from('bot_sessions').select('phone_number, session_data, is_paired');
+      }
+      const { data, error: healthError } = result;
       if (healthError) {
         console.log(chalk.red(`⚠️ DB Connection failed: ${healthError.message}`));
       } else {
@@ -334,7 +339,10 @@ async function launch() {
                       const sData = data?.session_data || {};
                       sData.owner_id = global.SERVER_ID;
                       sData.last_active = Date.now();
-                      await supabase.from('bot_sessions').update({ session_data: sData }).eq('phone_number', phone);
+                      const { error: hbRpcErr } = await supabase.rpc('update_session_data', { p_phone_number: phone, p_session_data: sData });
+                      if (hbRpcErr && hbRpcErr.message.includes('function')) {
+                          await supabase.from('bot_sessions').update({ session_data: sData }).eq('phone_number', phone);
+                      }
                   } catch (e) {
                       // Silently ignore db heartbeat errors
                   }
