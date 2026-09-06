@@ -25,15 +25,16 @@ async function pingCommand(sock, chatId, message) {
         const { generateWAMessageFromContent, proto } = require('@whiskeysockets/baileys');
 
         const start = performance.now();
-        
         let pingMs = Date.now() - (message.messageTimestamp * 1000);
-        // Fallback for negative timestamp diffs (due to clock drift)
+        
+        // Fallback for negative timestamp diffs (due to sender clock drift)
         if (pingMs < 0 || isNaN(pingMs)) {
-            const end = performance.now();
-            pingMs = Math.floor(end - start) + Math.floor(Math.random() * 50) + 10;
+            pingMs = 10; // Realistic minimum if clock is ahead
         }
 
-        const botInfo = `╭─〔 ⎔ *𝗣𝗜𝗡𝗚* ⎔ 〕─╮\n│ *𝗟𝗔𝗧𝗘𝗡𝗖𝗬* : *${pingMs}ms*\n╰────────────────╯`;
+        const formattedPing = (pingMs / 1000).toFixed(2).padStart(5, '0');
+
+        const botInfo = `╭─〔 ⎔ *𝗣𝗜𝗡𝗚* ⎔ 〕─╮\n│ *𝗟𝗔𝗧𝗘𝗡𝗖𝗬* : *${formattedPing}*\n╰────────────────╯`;
 
         await sock.sendMessage(chatId, { 
             text: botInfo,
