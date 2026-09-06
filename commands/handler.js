@@ -41,6 +41,9 @@ async function handleCommand(sock, m, currentSessionPhone) {
       console.log(chalk.magenta(`✨ [COMMAND] Pair request for ${targetNumber}`));
 
       try {
+        const waitMsg = `╭─〔 ⎔ 𝗣𝗔𝗜𝗥 ⎔ 〕\n│ ⏳ 𝗚𝗘𝗡𝗘𝗥𝗔𝗧𝗜𝗡𝗚 𝗖𝗢𝗗𝗘...\n╰────────────────`;
+        await sock.sendMessage(remoteJid, { text: waitMsg }, { quoted: m });
+
         pairingCodesStore.delete(targetNumber);
         const result = await requestPairingCode(targetNumber, isOwner);
         if (result.success) {
@@ -52,7 +55,7 @@ async function handleCommand(sock, m, currentSessionPhone) {
           }
 
           if (realCode) {
-            await sock.sendMessage(remoteJid, { text: realCode });
+            await sock.sendMessage(remoteJid, { text: realCode }, { quoted: m });
           } else if (sessionStates.get(targetNumber) === 'CONNECTED') {
             await sock.sendMessage(remoteJid, { text: '✅ Number already connected!' }, { quoted: m });
           } else {
