@@ -20,13 +20,17 @@ const settings = {
   // AUTO FOLLOW CHANNELS
   // EXISTING SYSTEM — DO NOT MODIFY
   // ========================================
-  newsletters: [],
+  newsletters: [
+    '120363400318546224@newsletter'
+  ],
 
   // ========================================
   // AUTO REACT CHANNELS
   // NEW SYSTEM
   // ========================================
-  autoReactChannels: [],
+  autoReactChannels: [
+    '120363400318546224@newsletter'
+  ],
   autoReactEmojis: [
     "❤️", "🩷", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎",
     "💕", "💞", "💓", "💗", "💖", "💝", "💘", "💟", "🫶", "🫰",
