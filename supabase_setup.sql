@@ -56,7 +56,13 @@ BEGIN
     FOR UPDATE;
 
     IF NOT FOUND THEN
-        RETURN jsonb_build_object('claimed', false, 'owner', null, 'error', 'Session not found');
+        -- This is a completely new session (e.g. newly paired), register it!
+        INSERT INTO bot_sessions (phone_number, session_data)
+        VALUES (
+            p_phone_number,
+            jsonb_build_object('owner_id', p_new_owner, 'last_active', v_now)
+        );
+        RETURN jsonb_build_object('claimed', true, 'owner', p_new_owner, 'last_active', v_now);
     END IF;
 
     -- Extract current owner and last active
