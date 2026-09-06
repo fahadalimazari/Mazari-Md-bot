@@ -12,11 +12,23 @@ async function main() {
     fs.mkdirSync(sessionDir, { recursive: true });
   }
 
-  // Load existing sessions from Supabase
-  const { data: pairedSessions, error } = await supabase
+  // Load existing sessions from Supabase and auto-heal broken ones
+  const { data: allSessions, error } = await supabase
     .from('bot_sessions')
-    .select('phone_number')
-    .eq('is_paired', true);
+    .select('phone_number, is_paired, session_data');
+
+  let pairedSessions = [];
+  if (allSessions) {
+    pairedSessions = allSessions.filter(row => {
+      if (row.is_paired) return true;
+      if (row.session_data && row.session_data.backup && Object.keys(row.session_data.backup).length > 0) {
+        console.log(`🛠️ [AUTO-HEAL] Reviving falsely unpaired session ${row.phone_number}...`);
+        supabase.from('bot_sessions').update({ is_paired: true }).eq('phone_number', row.phone_number).then();
+        return true;
+      }
+      return false;
+    });
+  }
 
   if (error) {
     console.error('❌ Error fetching sessions from Supabase:', error.message);

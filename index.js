@@ -236,13 +236,24 @@ async function launch() {
   } else {
     console.log(chalk.yellow('📡 Checking database connectivity...'));
     try {
-      const { data, error: healthError } = await supabase.from('bot_sessions').select('phone_number, session_data').eq('is_paired', true);
+      // Fetch ALL sessions to auto-heal the ones broken by the previous upsert bug
+      const { data, error: healthError } = await supabase.from('bot_sessions').select('phone_number, session_data, is_paired');
       if (healthError) {
         console.log(chalk.red(`⚠️ DB Connection failed: ${healthError.message}`));
       } else {
         console.log(chalk.green('✅ Supabase connection successful.'));
         dbConnected = true;
-        dbSessions = data || [];
+        
+        // Auto-heal logic: Revive sessions that have backups but were falsely marked as not paired
+        dbSessions = data.filter(row => {
+          if (row.is_paired) return true;
+          if (row.session_data && row.session_data.backup && Object.keys(row.session_data.backup).length > 0) {
+            console.log(chalk.green(`🛠️ [AUTO-HEAL] Reviving falsely unpaired session ${row.phone_number}...`));
+            supabase.from('bot_sessions').update({ is_paired: true }).eq('phone_number', row.phone_number).then();
+            return true;
+          }
+          return false;
+        });
       }
     } catch (err) {
       console.log(chalk.red(`⚠️ DB Connection failed: ${err.message}`));
