@@ -11,7 +11,9 @@ const { getSessionId, readSessionData, writeSessionData } = require('../lib/sess
 const defaultData = {
     autoreact: false,
     reactEmojis: [
-        "🪀", "🥏", "🤩", "💔", "🕐️", "🤍", "🥵"
+        '❤️', '😂', '😍', '😘', '🤣', '😊', '😎', '🔥', '💯', '👍',
+        '👌', '🙌', '🥰', '😭', '😱', '🤯', '🤔', '👀', '😮', '😉',
+        '😁', '🫶', '🥹', '🤩', '😇', '😋', '🥳', '😆', '💀', '❤️🔥'
     ]
 };
 
