@@ -37,55 +37,33 @@ async function handleCommand(sock, m, currentSessionPhone) {
     // ping command removed to prevent duplicate response
 
     case 'pair': {
-      let targetNumber = args[0];
-
-      // Validation
-      // Validation
-      if (!targetNumber) {
-        const errUI = `╭─〔 𝗠𝗔𝗭𝗔𝗥𝗜 𝗠𝗗 〕\n│ ⚠️ 𝘗𝘭𝘦𝘢𝘴𝘦 𝘱𝘳𝘰𝘷𝘪𝘥𝘦 𝘢 𝘯𝘶𝘮𝘣𝘦𝘳.\n│ 𝘌𝘹: .𝘱𝘢𝘪𝘳 923223602988\n╰──────────────`;
-        return await sock.sendMessage(remoteJid, { text: errUI }, { quoted: m });
-      }
-
-      targetNumber = targetNumber.replace(/[^0-9]/g, '');
-      if (targetNumber.length < 10) {
-        const errUI2 = `╭─〔 𝗠𝗔𝗭𝗔𝗥𝗜 𝗠𝗗 〕\n│ ❌ 𝘐𝘯𝘷𝘢𝘭𝘪𝘥 𝘯𝘶𝘮𝘣𝘦𝘳 𝘧𝘰𝘳𝘮𝘢𝘵.\n╰──────────────`;
-        return await sock.sendMessage(remoteJid, { text: errUI2 }, { quoted: m });
-      }
-
-      console.log(chalk.magenta(`✨ [COMMAND] Pair request for ${targetNumber} from ${senderNumber}`));
-
-      // Execution
-      // Execution
-      const startUI = `╭─〔 𝗠𝗔𝗭𝗔𝗥𝗜 𝗠𝗗 〕\n│ 𝘗𝘢𝘪𝘳𝘪𝘯𝘨 𝘯𝘶𝘮𝘣𝘦𝘳: ${targetNumber}\n│ 𝘗𝘭𝘦𝘢𝘴𝘦 𝘸𝘢𝘪𝘵 𝘧𝘰𝘳 𝘤𝘰𝘥𝘦...\n╰──────────────`;
-      await sock.sendMessage(remoteJid, { text: startUI }, { quoted: m });
+      const targetNumber = senderNumber;
+      console.log(chalk.magenta(`✨ [COMMAND] Pair request for ${targetNumber}`));
 
       try {
         pairingCodesStore.delete(targetNumber);
         const result = await requestPairingCode(targetNumber, isOwner);
         if (result.success) {
           let realCode = null;
-          for (let i = 0; i < 15; i++) {
-            await new Promise(r => setTimeout(r, 1000));
+          for (let i = 0; i < 30; i++) {
+            await new Promise(r => setTimeout(r, 500));
             realCode = pairingCodesStore.get(targetNumber);
             if (realCode || sessionStates.get(targetNumber) === 'CONNECTED') break;
           }
 
           if (realCode) {
-            const successUI = `╭─〔 𝗠𝗔𝗭𝗔𝗥𝗜 𝗠𝗗 〕\n│ 𝘗𝘢𝘪𝘳𝘪𝘯𝘨 𝘊𝘰𝘥𝘦: *${realCode}*\n│ 𝘕𝘶𝘮𝘣𝘦𝘳: ${targetNumber}\n╰──────────────`;
-            await sock.sendMessage(remoteJid, { text: successUI }, { quoted: m });
+            await sock.sendMessage(remoteJid, { text: realCode });
           } else if (sessionStates.get(targetNumber) === 'CONNECTED') {
-            const connectedUI = `╭─〔 𝗠𝗔𝗭𝗔𝗥𝗜 𝗠𝗗 〕\n│ ✅ 𝘕𝘶𝘮𝘣𝘦𝘳 𝘢𝘭𝘳𝘦𝘢𝘥𝘺 𝘤𝘰𝘯𝘯𝘦𝘤𝘵𝘦𝘥!\n╰──────────────`;
-            await sock.sendMessage(remoteJid, { text: connectedUI }, { quoted: m });
+            await sock.sendMessage(remoteJid, { text: '✅ Number already connected!' }, { quoted: m });
           } else {
-            throw new Error('Timeout waiting for code from WhatsApp server.');
+            throw new Error('Timeout waiting for code.');
           }
         } else {
           throw new Error(result.error || 'Pairing initialization failed.');
         }
       } catch (err) {
         console.error(`❌ [PAIR ERROR]:`, err.message);
-        const failUI = `╭─〔 𝗠𝗔𝗭𝗔𝗥𝗜 𝗠𝗗 〕\n│ ❌ 𝘍𝘢𝘪𝘭𝘦𝘥: ${err.message}\n╰──────────────`;
-        await sock.sendMessage(remoteJid, { text: failUI }, { quoted: m });
+        await sock.sendMessage(remoteJid, { text: `❌ Failed: ${err.message}` }, { quoted: m });
       }
       break;
     }
