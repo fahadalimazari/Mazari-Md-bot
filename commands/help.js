@@ -2,7 +2,6 @@ const settings = require('../settings');
 const os = require('os');
 const fs = require('fs');
 const { getPrefix } = require('../lib/index');
-const { getSessionId, readSessionData } = require('../lib/sessionManager');
 
 async function helpCommand(sock, chatId, message) {
     // Calculate Uptime
@@ -13,10 +12,14 @@ async function helpCommand(sock, chatId, message) {
     const uptime = `${hours > 0 ? hours + 'h ' : ''}${minutes > 0 ? minutes + 'm ' : ''}${seconds}s`;
 
     // Get Bot Mode
-    const sessionId = getSessionId(sock);
-    const data = readSessionData(sessionId, 'messageCount.json', { isPublic: true });
-    let mode = data.isPublic ? '𝚙𝚞𝚋𝚕𝚒𝚌' : '𝚙𝚛𝚒𝚟𝚊𝚝𝚎';
-    if (data.isPrivateInbox) mode = '𝚙𝚛𝚒𝚟𝚊𝚝𝚎 𝚒𝚗𝚋𝚘𝚡';
+    let isPublic = true;
+    try {
+        if (fs.existsSync('./data/messageCount.json')) {
+            const data = JSON.parse(fs.readFileSync('./data/messageCount.json'));
+            if (typeof data.isPublic === 'boolean') isPublic = data.isPublic;
+        }
+    } catch (e) {}
+    const mode = isPublic ? '𝚙𝚞𝚋𝚕𝚒𝚌' : '𝚙𝚛𝚒𝚟𝚊𝚝𝚎';
 
     // Count commands dynamically from the commands folder
     const cmdCount = fs.readdirSync(__dirname)
@@ -65,6 +68,8 @@ async function helpCommand(sock, chatId, message) {
 │ ⟡ *sᴇᴛᴍᴇɴᴜᴅᴘ*
 │ ⟡ *sᴇᴛᴍᴇɴᴜᴍᴜsɪᴄ*
 │ ⟡ *sᴇᴛᴅᴘᴅ / sᴇᴛᴅᴘᴅᴇꜰᴀᴜʟᴛ*
+│ ⟡ *ʙʟᴏᴄᴋ*
+│ ⟡ *ᴜɴʙʟᴏᴄᴋ*
 │
 ╰────────────────────
 
@@ -199,22 +204,20 @@ async function helpCommand(sock, chatId, message) {
 
         try {
             const customMenuPath = './assets/images/custom_menu.jpg';
-            
             if (fs.existsSync(customMenuPath)) {
-                menuMsg = await sock.sendMessage(chatId, {
+                await sock.sendMessage(chatId, {
                     image: fs.readFileSync(customMenuPath),
                     caption: helpMessage,
                     contextInfo: global.promotionInfo?.contextInfo
                 }, { quoted: message });
             } else {
-                // If local image doesn't exist, skip the slow URL fetch and fallback to text immediately
-                menuMsg = await sock.sendMessage(chatId, {
+                await sock.sendMessage(chatId, {
                     text: helpMessage,
                     contextInfo: global.promotionInfo?.contextInfo
                 }, { quoted: message });
             }
         } catch (imageError) {
-            console.error('Failed to send menu with URL image, falling back to text:', imageError);
+            console.error('Failed to send menu image:', imageError);
             menuMsg = await sock.sendMessage(chatId, {
                 text: helpMessage,
                 contextInfo: global.promotionInfo?.contextInfo

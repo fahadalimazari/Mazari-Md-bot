@@ -184,6 +184,8 @@ const { approveCommand } = require('./commands/approve');
 const { gcnameCommand } = require('./commands/gcname');
 const { gcdesCommand } = require('./commands/gcdes');
 const { smartreplyCommand, getSmartReplyStatus } = require('./commands/smartreply');
+const blockCommand = require('./commands/block');
+const unblockCommand = require('./commands/unblock');
 
 // Global Cooldown System - Optimized with auto-cleanup (Migrated to session-specific inside getSessionCache)
 const { getSessionId, getSessionCache, readSessionData } = require('./lib/sessionManager');
@@ -750,7 +752,7 @@ Contact the bot owner for support.`
         const isAdminCommand = adminCommands.some(cmd => userMessage.startsWith(cmd));
 
         // List of owner commands
-        const ownerCommands = ['.mode', '.smartreply', '.autostatus', '.statusseen', '.approve', '.antidelete', '.cleartmp', '.setpp', '.clearsession', '.areact', '.autoreact', '.autotyping', '.autoread', '.pmblocker', '.setmenudp', '.setdp', '.setmenumusic', '.setmusic', '.setdpd', '.setdpdefault'];
+        const ownerCommands = ['.mode', '.smartreply', '.autostatus', '.statusseen', '.approve', '.antidelete', '.cleartmp', '.setpp', '.clearsession', '.areact', '.autoreact', '.autotyping', '.autoread', '.pmblocker', '.setmenudp', '.setdp', '.setmenumusic', '.setmusic', '.setdpd', '.setdpdefault', '.block', '.unblock'];
         const isOwnerCommand = ownerCommands.some(cmd => userMessage.startsWith(cmd));
 
         let isSenderAdmin = false;
@@ -1004,6 +1006,14 @@ Contact the bot owner for support.`
                 break;
             case userMessage.startsWith('.pcustome'):
                 await pcustomeCommand(sock, chatId, senderId, userMessage.split(/\s+/).slice(1), message);
+                commandExecuted = true;
+                break;
+            case userMessage.startsWith('.block'):
+                await blockCommand(sock, chatId, message, userMessage.split(/\s+/).slice(1));
+                commandExecuted = true;
+                break;
+            case userMessage.startsWith('.unblock'):
+                await unblockCommand(sock, chatId, message, userMessage.split(/\s+/).slice(1));
                 commandExecuted = true;
                 break;
             case userMessage.startsWith('.autostatus') || userMessage.startsWith('.statusseen'):

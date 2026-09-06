@@ -13,7 +13,7 @@ function toSmallCaps(str) {
 
 const commandsList = {
     "𝗔𝗜 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦": ["gpt", "gemini", "imagine", "flux", "sora"],
-    "𝗢𝗪𝗡𝗘𝗥 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦": ["mode", "setprefix", "uptime", "time", "channelid", "clearsession", "update", "autostatus", "autoreact", "autotyping", "autoread", "anticall", "pmblocker", "setmenudp", "setmenumusic", "setdpd / setdpdefault"],
+    "𝗢𝗪𝗡𝗘𝗥 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦": ["mode", "setprefix", "uptime", "time", "channelid", "clearsession", "update", "autostatus", "autoreact", "autotyping", "autoread", "anticall", "pmblocker", "setmenudp", "setmenumusic", "setdpd / setdpdefault", "block", "unblock"],
     "𝗚𝗥𝗢𝗨𝗣 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦": ["gcsstatus", "kick", "add", "ban", "unban", "promote", "demote", "mute", "unmute", "tagall", "tagadmin", "hidetag", "antilink", "antitag", "welcome", "goodbye", "adminlock", "custom set", "custom off", "custom list", "autoblock on", "autoblock off", "antispam on", "antispam off", "poll", "antigm", "antigcstatus", "pdm"],
     "𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗘𝗥𝗦": ["facebook", "instagram", "tiktok", "twitter", "threads", "play", "song", "video", "ytmp4", "spotify", "pinterest", "lyrics"],
     "𝗖𝗢𝗡𝗩𝗘𝗥𝗧𝗘𝗥𝗦": ["sticker", "qc", "simage", "blur", "remini", "removebg", "crop", "attp", "emojimix", "take"],
