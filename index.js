@@ -275,45 +275,42 @@ async function launch() {
   }
 
   // 2. Initialize/Resume existing sessions
+  // 2. Initialize/Resume existing sessions
   let sessionsLoaded = 0;
   if (dbConnected) {
     const pairedSessions = dbSessions || [];
-    if (pairedSessions.length > 0) {
-      console.log(chalk.blue(`📡 Resuming ${pairedSessions.length} active sessions from database...`));
+    if (pairedSessions.length === 0) {
+      console.log(chalk.yellow(`[RESTORE] Supabase returned 0 persisted sessions.`));
+      console.log(chalk.cyan(`🌐 Awaiting new session pairing via Web UI...`));
+    } else {
+      console.log(chalk.blue(`[RESTORE] Found ${pairedSessions.length} persisted sessions in Supabase.`));
       for (const session of pairedSessions) {
         const dbPhone = session.phone_number.replace(/[^0-9]/g, '');
+        console.log(chalk.gray(`[RESTORE] Restoring session: ${dbPhone}`));
         initSession(dbPhone).catch(err => console.error(`Failed to init session ${dbPhone}:`, err));
         sessionsLoaded++;
         await new Promise(resolve => setTimeout(resolve, 2000)); // 2s stagger
       }
-    } else {
-      const localSessions = fs.existsSync(sessionDir) ? fs.readdirSync(sessionDir).filter(name => fs.lstatSync(path.join(sessionDir, name)).isDirectory()) : [];
-      if (localSessions.length > 0) {
-        console.log(chalk.blue(`📁 Resuming ${localSessions.length} sessions from local storage...`));
-        for (const phone of localSessions) {
-          initSession(phone).catch(err => console.error(`Failed to init local session ${phone}:`, err));
-          sessionsLoaded++;
-          await new Promise(resolve => setTimeout(resolve, 2000)); // 2s stagger
-        }
-      }
     }
   } else {
-    // If no DB connection, just load from local folders
-    const localSessions = fs.existsSync(sessionDir) ? fs.readdirSync(sessionDir).filter(name => fs.lstatSync(path.join(sessionDir, name)).isDirectory()) : [];
-    if (localSessions.length > 0) {
-      console.log(chalk.blue(`📁 Resuming ${localSessions.length} sessions from local storage...`));
-      for (const phone of localSessions) {
-        initSession(phone).catch(err => console.error(`Failed to init local session ${phone}:`, err));
-        sessionsLoaded++;
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-    }
+    console.log(chalk.red(`[RESTORE] CRITICAL ERROR: Supabase connection failed. Cannot restore sessions without database.`));
   }
 
-  if (sessionsLoaded === 0) {
-    console.log(chalk.yellow(`❌ No active sessions found in database or local storage.`));
-    console.log(chalk.cyan(`🌐 Awaiting new session pairing via Web UI...`));
-  }
+  // Graceful Shutdown - Flush all backups before Heroku kills the dyno
+  const gracefulShutdown = async (signal) => {
+    console.log(chalk.bgRed(`\n🛑 [SYSTEM] Received ${signal}. Forcing synchronized backup of all sessions before exit...`));
+    const { sessions, backupSession } = require('./lib/baileys-helper');
+    const activePhones = Array.from(sessions.keys());
+    for (const phone of activePhones) {
+      console.log(chalk.yellow(`💾 [SHUTDOWN] Force flushing backup for ${phone}...`));
+      await backupSession(phone); // ensure we wait for it to complete
+    }
+    console.log(chalk.green(`✅ [SHUTDOWN] All backups synced to Supabase. Exiting safely.`));
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
   process.on('uncaughtException', (err) => console.error('💥 Uncaught Exception:', err));
   process.on('unhandledRejection', (reason) => console.error('💥 Unhandled Rejection:', reason));
