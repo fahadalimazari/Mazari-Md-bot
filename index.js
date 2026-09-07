@@ -173,12 +173,9 @@ async function launch() {
       }
 
       try {
-        const { requestPairingCode, pairingCodesStore: localPCS } = require('./lib/baileys-helper');
-        // Clear old code so we wait for fresh one
-        if (global.pairingCodesStore) {
-          global.pairingCodesStore.delete(phone);
-        }
-
+        const { requestPairingCode, pairingCodesStore: localPCS, sessionStates } = require('./lib/baileys-helper');
+        
+        // requestPairingCode handles reusing existing attempt vs deleting old ones internally
         await requestPairingCode(phone, false);
 
         // Wait up to 15 seconds for the code
