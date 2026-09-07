@@ -274,13 +274,19 @@ async function launch() {
   if (dbConnected) {
     const pairedSessions = dbSessions || [];
     if (pairedSessions.length === 0) {
-      console.log(chalk.yellow(`[RESTORE] Supabase returned 0 persisted sessions.`));
+      console.log(chalk.yellow(`[STARTUP] Loading all persisted sessions from Supabase...`));
+      console.log(chalk.yellow(`[STARTUP] Found 0 persisted sessions.`));
       console.log(chalk.cyan(`🌐 Awaiting new session pairing via Web UI...`));
     } else {
-      console.log(chalk.blue(`[RESTORE] Found ${pairedSessions.length} persisted sessions in Supabase.`));
+      console.log(chalk.blue(`[STARTUP] Loading all persisted sessions from Supabase...`));
+      console.log(chalk.blue(`[STARTUP] Found ${pairedSessions.length} persisted sessions.`));
       for (const session of pairedSessions) {
         const dbPhone = session.phone_number.replace(/[^0-9]/g, '');
-        console.log(chalk.gray(`[RESTORE] Restoring session: ${dbPhone}`));
+        console.log(chalk.gray(`[RESTORE] Starting ${dbPhone}...`));
+        const hasBackup = !!(session.session_data && session.session_data.backup);
+        console.log(chalk.gray(`[RESTORE] Backup exists: ${hasBackup}`));
+        const filesCount = hasBackup ? Object.keys(session.session_data.backup).length : 0;
+        console.log(chalk.gray(`[RESTORE] Files restored: ${filesCount}`));
         initSession(dbPhone).catch(err => console.error(`Failed to init session ${dbPhone}:`, err));
         sessionsLoaded++;
         await new Promise(resolve => setTimeout(resolve, 2000)); // 2s stagger
