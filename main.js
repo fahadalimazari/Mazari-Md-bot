@@ -37,6 +37,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const { isSudo, getCustomCommands, getPrivateCustomCommands, getAutoblock, getPrefix, setPrefix } = require('./lib/index');
 const isOwnerOrSudo = require('./lib/isOwner');
 const { autotypingCommand, isAutotypingEnabled, handleAutotypingForMessage, handleAutotypingForCommand, showTypingAfterCommand } = require('./commands/autotyping');
+const { alwaysOnlineCommand } = require('./commands/alwaysonline');
 const { autoreadCommand, isAutoreadEnabled, handleAutoread } = require('./commands/autoread');
 
 // Command imports
@@ -752,7 +753,7 @@ Contact the bot owner for support.`
         const isAdminCommand = adminCommands.some(cmd => userMessage.startsWith(cmd));
 
         // List of owner commands
-        const ownerCommands = ['.mode', '.smartreply', '.autostatus', '.statusseen', '.approve', '.antidelete', '.cleartmp', '.setpp', '.clearsession', '.areact', '.autoreact', '.autotyping', '.autoread', '.pmblocker', '.setmenudp', '.setdp', '.setmenumusic', '.setmusic', '.setdpd', '.setdpdefault', '.block', '.unblock'];
+        const ownerCommands = ['.mode', '.smartreply', '.autostatus', '.statusseen', '.approve', '.antidelete', '.cleartmp', '.setpp', '.clearsession', '.areact', '.autoreact', '.autotyping', '.alwaysonline', '.autoread', '.pmblocker', '.setmenudp', '.setdp', '.setmenumusic', '.setmusic', '.setdpd', '.setdpdefault', '.block', '.unblock'];
         const isOwnerCommand = ownerCommands.some(cmd => userMessage.startsWith(cmd));
 
         let isSenderAdmin = false;
@@ -1002,6 +1003,10 @@ Contact the bot owner for support.`
                 break;
             case userMessage.startsWith('.autotyping'):
                 await autotypingCommand(sock, chatId, message, userMessage.split(/\s+/).slice(1));
+                commandExecuted = true;
+                break;
+            case userMessage.startsWith('.alwaysonline'):
+                await alwaysOnlineCommand(sock, chatId, message, userMessage.split(/\s+/).slice(1));
                 commandExecuted = true;
                 break;
             case userMessage.startsWith('.pcustome'):
@@ -1589,6 +1594,7 @@ Example:
                 break;
             case userMessage === '.clearsession' || userMessage === '.clearsesi':
                 await clearSessionCommand(sock, chatId, message);
+                break;
             case userMessage.startsWith('.autostatus') || userMessage.startsWith('.statusseen'):
                 const autoStatusArgs = userMessage.split(' ').slice(1);
                 await autoStatusCommand(sock, chatId, message, autoStatusArgs);
@@ -1804,7 +1810,9 @@ Example:
                 break;
             case userMessage.startsWith('.autotyping'):
                 await autotypingCommand(sock, chatId, message);
-                commandExecuted = true;
+                break;
+            case userMessage.startsWith('.alwaysonline'):
+                await alwaysOnlineCommand(sock, chatId, message, userMessage.split(/\s+/).slice(1));
                 break;
             case userMessage.startsWith('.autoread'):
                 await autoreadCommand(sock, chatId, message);
