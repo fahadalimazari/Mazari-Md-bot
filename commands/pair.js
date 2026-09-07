@@ -1,4 +1,4 @@
-const { initSession, pairingCodesStore } = require('../lib/baileys-helper');
+const { requestPairingCode, pairingCodesStore } = require('../lib/baileys-helper');
 
 async function pairCommand(sock, chatId, message, args) {
     try {
@@ -23,11 +23,8 @@ async function pairCommand(sock, chatId, message, args) {
             
             await sock.sendMessage(chatId, { text: `╭─〔 𝗠𝗔𝗭𝗔𝗥𝗜 𝗠𝗗 〕\n│ Pairing number: ${number}\n│ Please wait for code...\n╰──────────────` });
             
-            // Delete old code from store if any
-            pairingCodesStore.delete(number);
-            
-            // Generate locally (force true wipes old corrupted auth folders)
-            await initSession(number, { usePairingCode: true, force: true });
+            // Delegate pairing logic to the central safe requestPairingCode method
+            await requestPairingCode(number, false);
             
             let attempts = 0;
             const interval = setInterval(async () => {
