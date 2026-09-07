@@ -175,17 +175,25 @@ async function launch() {
       try {
         const { requestPairingCode } = require('./lib/baileys-helper');
         
-        // Wait up to 15 seconds for the code
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout waiting for pairing code.')), 15000));
+        let timer;
+        const timeoutPromise = new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Timeout waiting for pairing code.')), 15000);
+        });
         
         const result = await Promise.race([
           requestPairingCode(phone, false),
           timeoutPromise
         ]);
+        
+        clearTimeout(timer); // Prevent unhandled promise rejection and server crash
 
         if (result && result.success && result.code) {
           if (!res.headersSent) {
             return res.json({ success: true, code: result.code, server_id: global.SERVER_ID });
+          }
+        } else {
+          if (!res.headersSent) {
+            return res.status(500).json({ error: 'Pairing response was invalid or empty.' });
           }
         }
       } catch (err) {
