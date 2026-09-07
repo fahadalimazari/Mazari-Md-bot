@@ -239,15 +239,15 @@ async function launch() {
         dbConnected = true;
         
         // Auto-heal logic: Revive ALL sessions that have backups
-        dbSessions = data.filter(row => {
+        dbSessions = data;
+        dbSessions.forEach(row => {
           if (row.session_data && row.session_data.backup && Object.keys(row.session_data.backup).length > 0) {
             if (!row.is_paired) {
                 console.log(chalk.green(`🛠️ [AUTO-HEAL] Reviving falsely unpaired session ${row.phone_number}...`));
                 supabase.from('bot_sessions').update({ is_paired: true }).eq('phone_number', row.phone_number).then();
+                row.is_paired = true;
             }
-            return true;
           }
-          return row.is_paired;
         });
       }
     } catch (err) {
@@ -282,14 +282,19 @@ async function launch() {
       console.log(chalk.blue(`[STARTUP] Found ${pairedSessions.length} persisted sessions.`));
       for (const session of pairedSessions) {
         const dbPhone = session.phone_number.replace(/[^0-9]/g, '');
-        console.log(chalk.gray(`[RESTORE] Starting ${dbPhone}...`));
+        console.log(chalk.gray(`\n[RESTORE] Starting ${dbPhone}...`));
         const hasBackup = !!(session.session_data && session.session_data.backup);
         console.log(chalk.gray(`[RESTORE] Backup exists: ${hasBackup}`));
         const filesCount = hasBackup ? Object.keys(session.session_data.backup).length : 0;
-        console.log(chalk.gray(`[RESTORE] Files restored: ${filesCount}`));
-        initSession(dbPhone).catch(err => console.error(`Failed to init session ${dbPhone}:`, err));
-        sessionsLoaded++;
-        await new Promise(resolve => setTimeout(resolve, 2000)); // 2s stagger
+        
+        if (hasBackup && filesCount > 1) {
+            console.log(chalk.gray(`[RESTORE] Files restored: ${filesCount}`));
+            initSession(dbPhone).catch(err => console.error(`Failed to init session ${dbPhone}:`, err));
+            sessionsLoaded++;
+            await new Promise(resolve => setTimeout(resolve, 2000)); // 2s stagger
+        } else {
+            console.log(chalk.gray(`[RESTORE] Missing/incomplete backup. Keeping ${dbPhone} IDLE/pending.`));
+        }
       }
     }
   } else {
