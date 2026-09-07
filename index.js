@@ -173,34 +173,26 @@ async function launch() {
       }
 
       try {
-        const { requestPairingCode, pairingCodesStore: localPCS, sessionStates } = require('./lib/baileys-helper');
+        const { requestPairingCode } = require('./lib/baileys-helper');
         
-        // requestPairingCode handles reusing existing attempt vs deleting old ones internally
-        await requestPairingCode(phone, false);
-
         // Wait up to 15 seconds for the code
-        let attempts = 0;
-        const checkInterval = setInterval(() => {
-          attempts++;
-          const code = global.pairingCodesStore ? global.pairingCodesStore.get(phone) : null;
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout waiting for pairing code.')), 15000));
+        
+        const result = await Promise.race([
+          requestPairingCode(phone, false),
+          timeoutPromise
+        ]);
 
-          if (code) {
-            clearInterval(checkInterval);
-            if (!res.headersSent) {
-              if (code.startsWith('ERROR:')) {
-                return res.status(500).json({ error: code.replace('ERROR:', '').trim() });
-              }
-              return res.json({ success: true, code, server_id: global.SERVER_ID });
-            }
+        if (result && result.success && result.code) {
+          if (!res.headersSent) {
+            return res.json({ success: true, code: result.code, server_id: global.SERVER_ID });
           }
-
-          if (attempts > 30) { // 30 × 500ms = 15s
-            clearInterval(checkInterval);
-            if (!res.headersSent) return res.status(500).json({ error: 'Timeout waiting for pairing code.' });
-          }
-        }, 500);
+        }
       } catch (err) {
-        if (!res.headersSent) res.status(500).json({ error: 'Internal error: ' + err.message });
+        if (!res.headersSent) {
+          const status = err.message.includes('Timeout') ? 504 : 500;
+          res.status(status).json({ error: err.message || 'Internal error' });
+        }
       }
     });
 
