@@ -301,12 +301,18 @@ async function launch() {
   // Graceful Shutdown - Flush all backups before Heroku kills the dyno
   const gracefulShutdown = async (signal) => {
     console.log(chalk.bgRed(`\n🛑 [SYSTEM] Received ${signal}. Forcing synchronized backup of all sessions before exit...`));
-    const { sessions, backupSession } = require('./lib/baileys-helper');
+    const { sessions, backupSession, releaseOwnershipOnShutdown } = require('./lib/baileys-helper');
     const activePhones = Array.from(sessions.keys());
     for (const phone of activePhones) {
       console.log(chalk.yellow(`💾 [SHUTDOWN] Force flushing backup for ${phone}...`));
       await backupSession(phone); // ensure we wait for it to complete
     }
+    
+    // Sync: release ownership ONLY AFTER backups are safely written, avoiding race conditions on JSONB session_data
+    if (releaseOwnershipOnShutdown) {
+      await releaseOwnershipOnShutdown();
+    }
+    
     console.log(chalk.green(`✅ [SHUTDOWN] All backups synced to Supabase. Exiting safely.`));
     process.exit(0);
   };
