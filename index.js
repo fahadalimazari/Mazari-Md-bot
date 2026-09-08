@@ -292,7 +292,7 @@ async function launch() {
         const dbPhone = session.phone_number.replace(/[^0-9]/g, '');
         
         const status = session.session_data?.status;
-        if (status === 'INACTIVE' || status === 'NEEDS_PAIRING') {
+        if (status === 'INACTIVE' || status === 'NEEDS_PAIRING' || status === 'PAIRING' || status === 'CONFLICT') {
             console.log(chalk.gray(`\n⏭️ [SESSION] Skipping inactive session: ${dbPhone} (Status: ${status})`));
             continue;
         }
