@@ -292,8 +292,8 @@ async function launch() {
         const dbPhone = session.phone_number.replace(/[^0-9]/g, '');
         
         const status = session.session_data?.status;
-        if (status === 'INACTIVE' || status === 'NEEDS_PAIRING' || status === 'PAIRING' || status === 'CONFLICT') {
-            console.log(chalk.gray(`\n⏭️ [SESSION] Skipping inactive session: ${dbPhone} (Status: ${status})`));
+        if (status && status !== 'ACTIVE') {
+            console.log(chalk.gray(`\n⏭️ [SESSION] Skipping non-active session: ${dbPhone} (Status: ${status})`));
             continue;
         }
 
@@ -356,19 +356,27 @@ async function launch() {
               if (!sock) {
                   // Guard: Do not revive if session is no longer startable
                   if (state === 'CONFLICT' || state === 'AUTH_ERROR' || state === 'NEEDS_PAIRING' || state === 'IDLE' || lifecycle?.state === 'INACTIVE') continue;
+                  
+                  // Check persistent DB status before blind recovery
+                  const { data } = await supabase.from('bot_sessions').select('session_data').eq('phone_number', phone).maybeSingle();
+                  const pStatus = data?.session_data?.status;
+                  if (pStatus && pStatus !== 'ACTIVE') {
+                      console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} socket missing, but DB status is ${pStatus}. Skipping recovery.`));
+                      continue;
+                  }
+
                   console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} socket missing despite being CONNECTED. Recovering...`));
                   initSession(phone, { force: true }).catch(e => console.error(e));
               } else if (!supabase.isMock) {
                   // Session is healthy, broadcast heartbeat to lock out other servers
                   try {
-                      const { data } = await supabase.from('bot_sessions').select('session_data').eq('phone_number', phone).maybeSingle();
-                      const sData = data?.session_data || {};
-                      sData.owner_id = global.SERVER_ID;
-                      sData.last_active = Date.now();
-                      const { error: hbRpcErr } = await supabase.rpc('update_session_data', { p_phone_number: phone, p_session_data: sData });
-                      if (hbRpcErr && hbRpcErr.message.includes('function')) {
-                          await supabase.from('bot_sessions').update({ session_data: sData }).eq('phone_number', phone);
-                      }
+                      const { safeUpdateSessionData } = require('./lib/baileys-helper');
+                      await safeUpdateSessionData(phone, (existing) => {
+                          if (existing.status === 'INACTIVE' || existing.status === 'NEEDS_PAIRING' || existing.status === 'CONFLICT') {
+                              return null; // Do not overwrite terminal status
+                          }
+                          return { ...existing, owner_id: global.SERVER_ID, last_active: Date.now() };
+                      });
                   } catch (e) {
                       // Silently ignore db heartbeat errors
                   }
@@ -378,6 +386,15 @@ async function launch() {
               const age = Date.now() - (lifecycle.startedAt || 0);
               const isStuck = age > 180000; // 3 minutes stuck outside of OPEN
               if (isStuck && lifecycle.state !== 'IDLE' && lifecycle.state !== 'STOPPED' && lifecycle.state !== 'CONFLICT' && lifecycle.state !== 'AUTH_INVALID' && lifecycle.state !== 'NEEDS_PAIRING' && lifecycle.state !== 'INACTIVE' && lifecycle.state !== 'PAIRING') {
+                  
+                  // Check persistent DB status before blind recovery
+                  const { data } = await supabase.from('bot_sessions').select('session_data').eq('phone_number', phone).maybeSingle();
+                  const pStatus = data?.session_data?.status;
+                  if (pStatus && pStatus !== 'ACTIVE') {
+                      console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} STUCK, but DB status is ${pStatus}. Skipping recovery.`));
+                      continue;
+                  }
+
                   console.log(chalk.red(`⚠️ [WATCHDOG] Session ${phone} STUCK in ${lifecycle.state} for ${Math.round(age/1000)}s. Initiating recovery...`));
                   initSession(phone, { force: true }).catch(e => console.error(e));
               }
