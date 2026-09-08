@@ -335,17 +335,20 @@ async function launch() {
   process.on('unhandledRejection', (reason) => console.error('💥 Unhandled Rejection:', reason));
 
 
-  // 🛡️ [PRO WATCHDOG] - Monitoring bot health every 10 minutes
+  // 🛡️ [PRO WATCHDOG] - Monitoring bot health every 10 minutes (Wait, it's actually 30 seconds interval in code)
   setInterval(async () => {
-      const { sessionStates, sessions, initSession } = require('./lib/baileys-helper');
+      const { sessionStates, sessionLifecycle, sessions, initSession } = require('./lib/baileys-helper');
       console.log(chalk.blue(`🛡️ [WATCHDOG] Checking health & maintaining ownership of ${sessionStates.size} sessions...`));
       
       for (const [phone, state] of sessionStates.entries()) {
-          if (state === 'CONNECTED') {
-              const sock = sessions.get(phone);
+          const lifecycle = sessionLifecycle?.get(phone);
+          const sock = sessions.get(phone);
+          
+          if (state === 'CONNECTED' || (lifecycle && lifecycle.state === 'OPEN')) {
               // Trust Baileys connection state instead of aggressive websocket checks that cause false positives
               if (!sock) {
-                  console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} socket missing. Automatic recovery is disabled.`));
+                  console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} socket missing despite being CONNECTED. Recovering...`));
+                  initSession(phone, { force: true }).catch(e => console.error(e));
               } else if (!supabase.isMock) {
                   // Session is healthy, broadcast heartbeat to lock out other servers
                   try {
@@ -360,6 +363,14 @@ async function launch() {
                   } catch (e) {
                       // Silently ignore db heartbeat errors
                   }
+              }
+          } else if (lifecycle) {
+              // Watchdog recovery for stuck sessions
+              const age = Date.now() - (lifecycle.startedAt || 0);
+              const isStuck = age > 180000; // 3 minutes stuck outside of OPEN
+              if (isStuck && lifecycle.state !== 'IDLE' && lifecycle.state !== 'STOPPED' && lifecycle.state !== 'CONFLICT' && lifecycle.state !== 'AUTH_INVALID') {
+                  console.log(chalk.red(`⚠️ [WATCHDOG] Session ${phone} STUCK in ${lifecycle.state} for ${Math.round(age/1000)}s. Initiating recovery...`));
+                  initSession(phone, { force: true }).catch(e => console.error(e));
               }
           }
       }
