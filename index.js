@@ -359,9 +359,23 @@ async function launch() {
                   
                   // Check persistent DB status before blind recovery
                   const { data } = await supabase.from('bot_sessions').select('session_data').eq('phone_number', phone).maybeSingle();
-                  const pStatus = data?.session_data?.status;
+                  const sData = data?.session_data || {};
+                  const pStatus = sData.status;
                   if (pStatus && pStatus !== 'ACTIVE') {
                       console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} socket missing, but DB status is ${pStatus}. Skipping recovery.`));
+                      continue;
+                  }
+
+                  // Cross-server protection: Do not steal active valid ownership from another server
+                  const owner = sData.owner_id;
+                  const lastActive = sData.last_active || 0;
+                  const isOwnedByOther = owner && owner !== global.SERVER_ID;
+                  const isStale = (Date.now() - lastActive) > 180000; // 3-minute TTL
+                  if (isOwnedByOther && !isStale) {
+                      console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} is validly owned by active server ${owner}. Skipping forceful recovery.`));
+                      // Transition local state to CONFLICT so watchdog stops trying
+                      sessionStates.set(phone, 'CONFLICT');
+                      if (lifecycle) lifecycle.state = 'CONFLICT';
                       continue;
                   }
 
@@ -389,9 +403,23 @@ async function launch() {
                   
                   // Check persistent DB status before blind recovery
                   const { data } = await supabase.from('bot_sessions').select('session_data').eq('phone_number', phone).maybeSingle();
-                  const pStatus = data?.session_data?.status;
+                  const sData = data?.session_data || {};
+                  const pStatus = sData.status;
                   if (pStatus && pStatus !== 'ACTIVE') {
                       console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} STUCK, but DB status is ${pStatus}. Skipping recovery.`));
+                      continue;
+                  }
+
+                  // Cross-server protection: Do not steal active valid ownership from another server
+                  const owner = sData.owner_id;
+                  const lastActive = sData.last_active || 0;
+                  const isOwnedByOther = owner && owner !== global.SERVER_ID;
+                  const isStale = (Date.now() - lastActive) > 180000; // 3-minute TTL
+                  if (isOwnedByOther && !isStale) {
+                      console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} is STUCK locally but validly owned by active server ${owner}. Skipping forceful recovery.`));
+                      // Transition local state to CONFLICT
+                      sessionStates.set(phone, 'CONFLICT');
+                      lifecycle.state = 'CONFLICT';
                       continue;
                   }
 
