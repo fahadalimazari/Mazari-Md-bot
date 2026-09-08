@@ -290,6 +290,13 @@ async function launch() {
       console.log(chalk.blue(`[STARTUP] Found ${pairedSessions.length} persisted sessions.`));
       for (const session of pairedSessions) {
         const dbPhone = session.phone_number.replace(/[^0-9]/g, '');
+        
+        const status = session.session_data?.status;
+        if (status === 'INACTIVE' || status === 'NEEDS_PAIRING') {
+            console.log(chalk.gray(`\n⏭️ [SESSION] Skipping inactive session: ${dbPhone} (Status: ${status})`));
+            continue;
+        }
+
         console.log(chalk.gray(`\n[RESTORE] Starting ${dbPhone}...`));
         const hasBackup = !!(session.session_data && session.session_data.backup);
         console.log(chalk.gray(`[RESTORE] Backup exists: ${hasBackup}`));
@@ -368,7 +375,7 @@ async function launch() {
               // Watchdog recovery for stuck sessions
               const age = Date.now() - (lifecycle.startedAt || 0);
               const isStuck = age > 180000; // 3 minutes stuck outside of OPEN
-              if (isStuck && lifecycle.state !== 'IDLE' && lifecycle.state !== 'STOPPED' && lifecycle.state !== 'CONFLICT' && lifecycle.state !== 'AUTH_INVALID' && lifecycle.state !== 'NEEDS_PAIRING') {
+              if (isStuck && lifecycle.state !== 'IDLE' && lifecycle.state !== 'STOPPED' && lifecycle.state !== 'CONFLICT' && lifecycle.state !== 'AUTH_INVALID' && lifecycle.state !== 'NEEDS_PAIRING' && lifecycle.state !== 'INACTIVE') {
                   console.log(chalk.red(`⚠️ [WATCHDOG] Session ${phone} STUCK in ${lifecycle.state} for ${Math.round(age/1000)}s. Initiating recovery...`));
                   initSession(phone, { force: true }).catch(e => console.error(e));
               }
