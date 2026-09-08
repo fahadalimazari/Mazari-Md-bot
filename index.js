@@ -300,16 +300,10 @@ async function launch() {
         console.log(chalk.gray(`\n[RESTORE] Starting ${dbPhone}...`));
         const hasBackup = !!(session.session_data && session.session_data.backup);
         console.log(chalk.gray(`[RESTORE] Backup exists: ${hasBackup}`));
-        const filesCount = hasBackup ? Object.keys(session.session_data.backup).length : 0;
         
-        if (hasBackup && filesCount > 1) {
-            console.log(chalk.gray(`[RESTORE] Files restored: ${filesCount}`));
-            initSession(dbPhone).catch(err => console.error(`Failed to init session ${dbPhone}:`, err));
-            sessionsLoaded++;
-            await new Promise(resolve => setTimeout(resolve, 2000)); // 2s stagger
-        } else {
-            console.log(chalk.gray(`[RESTORE] Missing/incomplete backup. Keeping ${dbPhone} IDLE/pending.`));
-        }
+        initSession(dbPhone).catch(err => console.error(`Failed to init session ${dbPhone}:`, err));
+        sessionsLoaded++;
+        await new Promise(resolve => setTimeout(resolve, 2000)); // 2s stagger
       }
     }
   } else {
