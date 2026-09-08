@@ -33,7 +33,10 @@ async function handleAntilinkCommand(sock, chatId, userMessage, senderId, messag
             case 'delete': {
                 await setAntilink(chatId, 'on', action);
                 const actionLabel = action.toUpperCase();
-                const ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜𝗟𝗜𝗡𝗞 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🔒 *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗔𝗖𝗧𝗜𝗩𝗘*\n│ ⚙️ *𝗠𝗢𝗗𝗘* : *${actionLabel}*\n│ ⚠️ *𝗟𝗜𝗠𝗜𝗧* : *𝟯 𝗪𝗔𝗥𝗡𝗜𝗡𝗚𝗦*`;
+                let ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜𝗟𝗜𝗡𝗞 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🔒 *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗔𝗖𝗧𝗜𝗩𝗘*\n│ ⚙️ *𝗠𝗢𝗗𝗘* : *${actionLabel}*`;
+                if (action === 'warn') {
+                    ui += `\n│ ⚠️ *𝗟𝗜𝗠𝗜𝗧* : *𝟯 𝗪𝗔𝗥𝗡𝗜𝗡𝗚𝗦*`;
+                }
                 await sock.sendMessage(chatId, { text: ui }, { quoted: message });
                 break;
             }
@@ -52,7 +55,10 @@ async function handleAntilinkCommand(sock, chatId, userMessage, senderId, messag
                     await sock.sendMessage(chatId, { text: ui }, { quoted: message });
                 } else {
                     const actionLabel = (status.action || 'delete').toUpperCase();
-                    const ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜𝗟𝗜𝗡𝗞 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🔒 *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗔𝗖𝗧𝗜𝗩𝗘*\n│ ⚙️ *𝗠𝗢𝗗𝗘* : *${actionLabel}*\n│ ⚠️ *𝗟𝗜𝗠𝗜𝗧* : *𝟯 𝗪𝗔𝗥𝗡𝗜𝗡𝗚𝗦*`;
+                    let ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜𝗟𝗜𝗡𝗞 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🔒 *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗔𝗖𝗧𝗜𝗩𝗘*\n│ ⚙️ *𝗠𝗢𝗗𝗘* : *${actionLabel}*`;
+                    if (status.action === 'warn') {
+                        ui += `\n│ ⚠️ *𝗟𝗜𝗠𝗜𝗧* : *𝟯 𝗪𝗔𝗥𝗡𝗜𝗡𝗚𝗦*`;
+                    }
                     await sock.sendMessage(chatId, { text: ui }, { quoted: message });
                 }
                 break;
