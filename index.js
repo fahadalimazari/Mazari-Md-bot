@@ -354,6 +354,8 @@ async function launch() {
           if (state === 'CONNECTED' || (lifecycle && lifecycle.state === 'OPEN')) {
               // Trust Baileys connection state instead of aggressive websocket checks that cause false positives
               if (!sock) {
+                  // Guard: Do not revive if session is no longer startable
+                  if (state === 'CONFLICT' || state === 'AUTH_ERROR' || state === 'NEEDS_PAIRING' || state === 'IDLE' || lifecycle?.state === 'INACTIVE') continue;
                   console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} socket missing despite being CONNECTED. Recovering...`));
                   initSession(phone, { force: true }).catch(e => console.error(e));
               } else if (!supabase.isMock) {
@@ -375,7 +377,7 @@ async function launch() {
               // Watchdog recovery for stuck sessions
               const age = Date.now() - (lifecycle.startedAt || 0);
               const isStuck = age > 180000; // 3 minutes stuck outside of OPEN
-              if (isStuck && lifecycle.state !== 'IDLE' && lifecycle.state !== 'STOPPED' && lifecycle.state !== 'CONFLICT' && lifecycle.state !== 'AUTH_INVALID' && lifecycle.state !== 'NEEDS_PAIRING' && lifecycle.state !== 'INACTIVE') {
+              if (isStuck && lifecycle.state !== 'IDLE' && lifecycle.state !== 'STOPPED' && lifecycle.state !== 'CONFLICT' && lifecycle.state !== 'AUTH_INVALID' && lifecycle.state !== 'NEEDS_PAIRING' && lifecycle.state !== 'INACTIVE' && lifecycle.state !== 'PAIRING') {
                   console.log(chalk.red(`⚠️ [WATCHDOG] Session ${phone} STUCK in ${lifecycle.state} for ${Math.round(age/1000)}s. Initiating recovery...`));
                   initSession(phone, { force: true }).catch(e => console.error(e));
               }
