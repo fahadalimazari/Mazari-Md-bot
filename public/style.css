@@ -242,7 +242,7 @@ body::before {
   background: rgba(0, 0, 0, 0.55);
   box-shadow: inset 0 2px 12px rgba(0,0,0,0.6);
   transition: all var(--transition);
-  position: relative; overflow: hidden;
+  position: relative; overflow: visible;
 }
 .custom-phone-input:focus-within {
   border-color: var(--red-bright);
