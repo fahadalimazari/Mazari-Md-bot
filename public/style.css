@@ -236,6 +236,50 @@ body::before {
   letter-spacing: 0.5px; text-transform: uppercase;
 }
 
+/* ─── SERVER SELECTOR ───────────────────────────────────── */
+.custom-server-input {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: inset 0 2px 12px rgba(0,0,0,0.6);
+  transition: all var(--transition);
+  position: relative;
+  overflow: visible;
+  display: flex;
+  width: 100%;
+  margin-bottom: 12px;
+}
+.custom-server-input:focus-within {
+  border-color: var(--red-bright);
+  box-shadow: 0 0 0 3px rgba(232,0,30,0.18), inset 0 2px 12px rgba(0,0,0,0.6);
+}
+.server-dropdown {
+  width: 100%; background: transparent; border: none;
+  padding: 17px 18px !important;
+  color: white; font-size: 1.1rem; outline: none;
+  font-family: var(--font-body); letter-spacing: 1px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+}
+.server-dropdown option {
+  background-color: #110202;
+  color: white;
+  padding: 10px;
+}
+.custom-server-input::after {
+  content: '\f0d7';
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
 /* â”€â”€â”€ PHONE INPUT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .custom-phone-input {
   border: 1px solid var(--border); border-radius: var(--radius-md);

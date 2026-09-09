@@ -2,8 +2,73 @@
 // MAZARI MD – Pairing Frontend Logic (vanilla JS)
 // ---------------------------------------------------------------
 
-const API_URL = 'https://mazari-bot-01-f026a4cd53d1.herokuapp.com/api/session/pair'; // Direct Heroku backend link
+// Manually maintain the list of server URLs.
+// Replace each 'ACTUAL_URL_HERE' with the real Heroku endpoint for that server.
+const servers = [
+  { name: 'Server 01', url: 'https://mazari-bot-01-f026a4cd53d1.herokuapp.com/api/session/pair' },
+  { name: 'Server 02', url: 'https://mazari-bot-02-4229c3de13cc.herokuapp.com/api/session/pair' },
+  // Placeholder entries for servers 03 through 48 – replace ACTUAL_URL_HERE with real URLs
+  { name: 'Server 03', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 04', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 05', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 06', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 07', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 08', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 09', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 10', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 11', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 12', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 13', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 14', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 15', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 16', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 17', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 18', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 19', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 20', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 21', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 22', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 23', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 24', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 25', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 26', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 27', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 28', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 29', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 30', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 31', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 32', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 33', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 34', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 35', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 36', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 37', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 38', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 39', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 40', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 41', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 42', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 43', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 44', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 45', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 46', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 47', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 48', url: 'ACTUAL_URL_HERE' },
+  { name: 'Server 49', url: 'ACTUAL_URL_HERE' }
+];
 
+document.addEventListener('DOMContentLoaded', () => {
+  const serverSelector = document.getElementById('server-selector');
+  if (serverSelector) {
+    servers.forEach(server => {
+      const option = document.createElement('option');
+      option.value = server.url;
+      option.textContent = server.name;
+      serverSelector.appendChild(option);
+    });
+    // Default to Server 01 is handled automatically as it's the first option
+  }
+});
 const phoneInput = document.getElementById('phone-input');
 const pairBtn = document.getElementById('pair-btn');
 const btnText = document.getElementById('btn-text');
@@ -141,8 +206,10 @@ pairBtn.addEventListener('click', async () => {
   pairBtn.disabled = true;
   btnText.textContent = 'GENERATING...';
   
+  const selectedUrl = document.getElementById('server-selector').value;
+
   try {
-    const resp = await fetch(API_URL, {
+    const resp = await fetch(selectedUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ number: sanitized })
