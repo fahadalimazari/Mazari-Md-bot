@@ -326,8 +326,13 @@ async function launch() {
         const dbPhone = session.phone_number.replace(/[^0-9]/g, '');
         
         const status = session.session_data?.status;
-        if (status && status !== 'ACTIVE') {
-            console.log(chalk.gray(`\n⏭️ [SESSION] Skipping non-active session: ${dbPhone} (Status: ${status})`));
+        const { isRestoreable } = require('./lib/baileys-helper');
+        const restoreable = isRestoreable(dbPhone, session.session_data);
+
+        // Do not blindly skip sessions that are marked NEEDS_PAIRING if they have valid auth.
+        // A temporary disconnect might have marked them NEEDS_PAIRING incorrectly.
+        if (status && status !== 'ACTIVE' && !restoreable) {
+            console.log(chalk.gray(`\n⏭️ [SESSION] Skipping genuinely dead session: ${dbPhone} (Status: ${status}, No Valid Auth)`));
             continue;
         }
 
@@ -394,8 +399,11 @@ async function launch() {
                   const { data } = await supabase.from('bot_sessions').select('session_data').eq('phone_number', phone).maybeSingle();
                   const sData = data?.session_data || {};
                   const pStatus = sData.status;
-                  if (pStatus && pStatus !== 'ACTIVE') {
-                      console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} socket missing, but DB status is ${pStatus}. Skipping recovery.`));
+                  const { isRestoreable } = require('./lib/baileys-helper');
+                  const restoreable = isRestoreable(phone, sData);
+
+                  if (pStatus && pStatus !== 'ACTIVE' && !restoreable) {
+                      console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} socket missing, DB status is ${pStatus}, and NO valid auth. Skipping recovery.`));
                       continue;
                   }
 
@@ -438,8 +446,11 @@ async function launch() {
                   const { data } = await supabase.from('bot_sessions').select('session_data').eq('phone_number', phone).maybeSingle();
                   const sData = data?.session_data || {};
                   const pStatus = sData.status;
-                  if (pStatus && pStatus !== 'ACTIVE') {
-                      console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} STUCK, but DB status is ${pStatus}. Skipping recovery.`));
+                  const { isRestoreable } = require('./lib/baileys-helper');
+                  const restoreable = isRestoreable(phone, sData);
+
+                  if (pStatus && pStatus !== 'ACTIVE' && !restoreable) {
+                      console.log(chalk.yellow(`⚠️ [WATCHDOG] Session ${phone} STUCK, DB status is ${pStatus}, and NO valid auth. Skipping recovery.`));
                       continue;
                   }
 
