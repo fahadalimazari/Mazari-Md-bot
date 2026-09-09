@@ -1,6 +1,6 @@
 require('dotenv').config();
 const crypto = require('crypto');
-global.SERVER_ID = process.env.SERVER_ID || process.env.DYNO || ('local-' + process.pid + '-' + crypto.randomUUID().slice(0, 8));
+global.SERVER_ID = process.env.DYNO || process.env.SERVER_ID || ('local-' + process.pid + '-' + crypto.randomUUID().slice(0, 8));
 const MAX_BOTS_PER_SERVER = parseInt(process.env.MAX_BOTS_PER_SERVER, 10) || 60;
 
 const { initSession, question, capacityTracker } = require('./lib/baileys-helper');
@@ -276,7 +276,41 @@ async function launch() {
     }, HEARTBEAT_INTERVAL_MS);
   }
 
-  // 2. Initialize/Resume existing sessions
+  // ── Session Distribution Logic ────────────────────────────────────
+  function shouldProcessSession(phoneNumber) {
+      const workerCount = parseInt(process.env.WORKER_COUNT, 10);
+      if (!workerCount || workerCount <= 1) return true; // Distribution disabled
+
+      const dyno = process.env.DYNO || '';
+      const isWeb = dyno.startsWith('web');
+
+      // As per requirement, Web dyno must not load persistent sessions if dedicated workers are enabled
+      if (isWeb) return false;
+
+      // Extract worker index (e.g. "worker.1" -> index 0, "worker.2" -> index 1)
+      const match = dyno.match(/\.(\d+)$/);
+      let myIndex = 0;
+      if (match) {
+          myIndex = parseInt(match[1], 10) - 1;
+      } else if (process.env.WORKER_ID) {
+          myIndex = parseInt(process.env.WORKER_ID, 10) - 1;
+      }
+      
+      if (isNaN(myIndex) || myIndex < 0) {
+          myIndex = 0;
+      }
+
+      // Deterministic hash of phone number
+      let hash = 0;
+      for (let i = 0; i < phoneNumber.length; i++) {
+          hash = (hash << 5) - hash + phoneNumber.charCodeAt(i);
+          hash |= 0;
+      }
+      
+      const assignedIndex = Math.abs(hash) % workerCount;
+      return assignedIndex === (myIndex % workerCount);
+  }
+
   // 2. Initialize/Resume existing sessions
   let sessionsLoaded = 0;
   if (dbConnected) {
@@ -294,6 +328,11 @@ async function launch() {
         const status = session.session_data?.status;
         if (status && status !== 'ACTIVE') {
             console.log(chalk.gray(`\n⏭️ [SESSION] Skipping non-active session: ${dbPhone} (Status: ${status})`));
+            continue;
+        }
+
+        if (!shouldProcessSession(dbPhone)) {
+            console.log(chalk.gray(`\n⏭️ [SESSION] Skipping session: ${dbPhone} (Assigned to another worker)`));
             continue;
         }
 
