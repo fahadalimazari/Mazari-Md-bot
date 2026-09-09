@@ -113,14 +113,22 @@ pairBtn.addEventListener('click', async () => {
   }
   
   // Validate number using intl-tel-input built-in validation
-  if (!iti.isValidNumber()) {
+  let isValid = iti.isValidNumber();
+  let fullNumber = iti.getNumber();
+  
+  // Custom Fallback: libphonenumber (used by intl-tel-input) is often outdated
+  // and incorrectly rejects newer Pakistani mobile prefixes (like 0355, 0370, etc).
+  // In Pakistan, ANY 10-digit number starting with 3 is a valid mobile number.
+  if (!isValid && countryData && countryData.iso2 === 'pk') {
+      if (fullNumber.match(/^\+923\d{9}$/)) {
+          isValid = true;
+      }
+  }
+
+  if (!isValid) {
     showMessage('❌ Invalid phone number. Please check the country code and number.', 'error');
     return;
   }
-  
-  // Get full number in E.164 format (e.g., +923001234567)
-  // iti.getNumber() natively strips leading local 0 prefixes and formats properly
-  let fullNumber = iti.getNumber();
   
   if (!fullNumber || !fullNumber.startsWith('+')) {
     showMessage('❌ Could not format international number properly.', 'error');
