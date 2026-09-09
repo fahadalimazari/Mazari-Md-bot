@@ -2,6 +2,7 @@ const settings = require('../settings');
 const os = require('os');
 const fs = require('fs');
 const { getPrefix } = require('../lib/index');
+const { readSessionData } = require('../lib/sessionManager');
 
 async function helpCommand(sock, chatId, message) {
     // Calculate Uptime
@@ -11,15 +12,16 @@ async function helpCommand(sock, chatId, message) {
     const seconds = Math.floor(runtime % 60);
     const uptime = `${hours > 0 ? hours + 'h ' : ''}${minutes > 0 ? minutes + 'm ' : ''}${seconds}s`;
 
-    // Get Bot Mode
-    let isPublic = true;
-    try {
-        if (fs.existsSync('./data/messageCount.json')) {
-            const data = JSON.parse(fs.readFileSync('./data/messageCount.json'));
-            if (typeof data.isPublic === 'boolean') isPublic = data.isPublic;
-        }
-    } catch (e) {}
-    const mode = isPublic ? '𝚙𝚞𝚋𝚕𝚒𝚌' : '𝚙𝚛𝚒𝚟𝚊𝚝𝚎';
+    // Get Bot Mode dynamically per session
+    const sessionId = sock.user.id.split(':')[0].split('@')[0];
+    const data = readSessionData(sessionId, 'messageCount.json', { isPublic: true, isPrivateInbox: false });
+    
+    let mode = 'PUBLIC';
+    if (data.isPrivateInbox) {
+        mode = 'PRIVATE INBOX';
+    } else if (!data.isPublic) {
+        mode = 'PRIVATE';
+    }
 
     // Count commands dynamically from the commands folder
     const cmdCount = fs.readdirSync(__dirname)
