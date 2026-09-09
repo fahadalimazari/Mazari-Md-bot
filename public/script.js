@@ -88,6 +88,30 @@ function clearMessage() {
 pairBtn.addEventListener('click', async () => {
   clearMessage();
   
+  let rawInput = phoneInput.value.replace(/[\s\-]/g, '');
+  const countryData = iti.getSelectedCountryData();
+  
+  if (rawInput && countryData) {
+      const dialCode = countryData.dialCode;
+      
+      // Auto-fix if user pasted international format directly in input
+      if (rawInput.startsWith('+')) {
+          iti.setNumber(rawInput);
+      } 
+      // Auto-fix if user typed 923001234567 while +92 is selected
+      else if (rawInput.startsWith(dialCode) && rawInput.length > 10) {
+          iti.setNumber('+' + rawInput);
+      } 
+      // Auto-fix for PK: if user typed 03001234567 (11 digits starting with 0)
+      else if (countryData.iso2 === 'pk' && rawInput.startsWith('0') && rawInput.length === 11) {
+          iti.setNumber('+' + dialCode + rawInput.substring(1));
+      }
+      // Auto-fix for PK: if user typed 3001234567 (10 digits starting with 3)
+      else if (countryData.iso2 === 'pk' && rawInput.startsWith('3') && rawInput.length === 10) {
+          iti.setNumber('+' + dialCode + rawInput);
+      }
+  }
+  
   // Validate number using intl-tel-input built-in validation
   if (!iti.isValidNumber()) {
     showMessage('❌ Invalid phone number. Please check the country code and number.', 'error');
