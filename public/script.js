@@ -20,8 +20,38 @@ const iti = window.intlTelInput(phoneInput, {
   },
   utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.2.1/js/utils.js",
   separateDialCode: true,
-  preferredCountries: ["pk", "in", "bd", "id", "br"]
+  preferredCountries: ["pk", "in", "ae", "sa", "gb", "us"]
 });
+
+// Function to dynamically add the country name next to the selected flag
+function updateCountryName() {
+  const countryData = iti.getSelectedCountryData();
+  const selectedFlagContainer = document.querySelector('.iti__selected-flag');
+  
+  if (!selectedFlagContainer || !countryData) return;
+  
+  let nameSpan = document.querySelector('.iti__custom-country-name');
+  if (!nameSpan) {
+    nameSpan = document.createElement('span');
+    nameSpan.className = 'iti__custom-country-name';
+    
+    // Insert the name between the flag and the dial code
+    const dialCode = selectedFlagContainer.querySelector('.iti__selected-dial-code');
+    if (dialCode) {
+      selectedFlagContainer.insertBefore(nameSpan, dialCode);
+    } else {
+      selectedFlagContainer.appendChild(nameSpan);
+    }
+  }
+  
+  // Display only the main country name (stripping out brackets if any)
+  nameSpan.textContent = countryData.name.split(' (')[0] + ' ';
+}
+
+// Initial setup and listener for country changes
+phoneInput.addEventListener('countrychange', updateCountryName);
+// Add a small delay for initial setup to ensure DOM is ready
+setTimeout(updateCountryName, 100);
 
 // Smooth Scrolling for Nav Links
 document.querySelectorAll('.nav-item').forEach(anchor => {
@@ -65,10 +95,16 @@ pairBtn.addEventListener('click', async () => {
   }
   
   // Get full number in E.164 format (e.g., +923001234567)
-  const fullNumber = iti.getNumber();
+  // iti.getNumber() natively strips leading local 0 prefixes and formats properly
+  let fullNumber = iti.getNumber();
+  
+  if (!fullNumber || !fullNumber.startsWith('+')) {
+    showMessage('❌ Could not format international number properly.', 'error');
+    return;
+  }
   
   // Remove the '+' sign for the backend which expects pure digits like 923001234567
-  const sanitized = fullNumber.replace(/[^0-9]/g, '');
+  const sanitized = fullNumber.replace('+', '').trim();
   
   pairBtn.disabled = true;
   btnText.textContent = 'GENERATING...';

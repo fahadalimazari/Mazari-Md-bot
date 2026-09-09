@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 /* â”€â”€â”€ DESIGN TOKENS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 :root {
@@ -248,13 +248,23 @@ body::before {
   border-color: var(--red-bright);
   box-shadow: 0 0 0 3px rgba(232,0,30,0.18), inset 0 2px 12px rgba(0,0,0,0.6);
 }
-.iti { width: 100%; display: block; }
-.iti__flag-container { z-index: 5; }
+.iti { width: 100%; display: flex !important; align-items: stretch; }
+.iti__flag-container { position: static !important; flex-shrink: 0; z-index: 5; }
 .iti__selected-flag {
   background: rgba(0,0,0,0.3) !important;
-  padding: 0 14px !important;
+  padding: 0 16px !important;
   border-right: 1px solid var(--border);
   border-radius: var(--radius-md) 0 0 var(--radius-md);
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  height: 100% !important;
+}
+.iti__custom-country-name {
+  font-size: 0.95rem;
+  color: #fff;
+  font-weight: 500;
+  white-space: nowrap;
 }
 .iti__selected-flag:hover { background: rgba(232,0,30,0.12) !important; }
 .iti__country-list {
@@ -270,9 +280,10 @@ body::before {
 .iti__country-name, .iti__dial-code { color: #fff; }
 input[type="tel"] {
   width: 100%; background: transparent; border: none;
-  padding: 17px 18px 17px 95px !important;
+  padding: 17px 18px !important; /* Removed absolute padding-left */
   color: white; font-size: 1.1rem; outline: none;
   font-family: var(--font-body); letter-spacing: 2px;
+  flex-grow: 1;
 }
 input[type="tel"]::placeholder { color: #444; letter-spacing: 0; font-size: 0.95rem; }
 .help-text { font-size: 0.82rem; color: var(--text-muted); display: flex; align-items: center; gap: 7px; }
@@ -499,6 +510,21 @@ input[type="tel"]::placeholder { color: #444; letter-spacing: 0; font-size: 0.95
   .pairing-copy-btn { width: 100%; }
 }
 
+/* ─── RESPONSIVE: 480px (Stack Phone Input) ───────────── */
+@media (max-width: 480px) {
+  .iti { flex-direction: column; }
+  .iti__selected-flag {
+    border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px !important;
+    justify-content: flex-start;
+  }
+  input[type="tel"] {
+    padding: 15px 16px !important;
+  }
+}
+
 /* â”€â”€â”€ RESPONSIVE: 360px â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 360px) {
   .main-content { padding: 1rem 0.7rem; }
@@ -506,7 +532,7 @@ input[type="tel"]::placeholder { color: #444; letter-spacing: 0; font-size: 0.95
   .features-bar { grid-template-columns: 1fr 1fr; gap: 6px; padding: 0.8rem; }
   .logo-title   { font-size: 1.1rem; }
   .header-logo-img { width: 36px; height: 36px; }
-  input[type="tel"] { font-size: 1rem; padding: 15px 14px 15px 90px !important; }
+  input[type="tel"] { font-size: 1rem; padding: 15px 16px !important; }
   .step-number  { width: 30px; height: 30px; font-size: 0.78rem; }
   .steps-list::before { left: 14px; }
 }
