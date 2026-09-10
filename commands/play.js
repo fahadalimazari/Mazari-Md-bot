@@ -1,34 +1,35 @@
 const yts = require('yt-search');
 const axios = require('axios');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const util = require('util');
-const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 
-async function downloadToTemp(url, ext) {
-    const tempDir = path.join(process.cwd(), 'temp');
-    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-    const localFilePath = path.join(tempDir, Date.now() + ext);
+function findExecutable(name) {
+    const isWin = process.platform === 'win32';
+    const exeName = isWin ? `${name}.exe` : name;
     
-    const response = await axios({
-        url,
-        method: 'GET',
-        responseType: 'stream',
-        timeout: 60000,
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
-    });
-    
-    const writer = fs.createWriteStream(localFilePath);
-    response.data.pipe(writer);
-    
-    return new Promise((resolve, reject) => {
-        writer.on('finish', () => resolve(localFilePath));
-        writer.on('error', reject);
-    });
+    const candidates = [
+        path.join(process.cwd(), exeName),
+        path.join(__dirname, '..', exeName),
+        path.join(__dirname, '..', 'bin', exeName)
+    ];
+
+    for (const cand of candidates) {
+        if (fs.existsSync(cand)) return cand;
+    }
+    return exeName; // fallback to system PATH
 }
 
 async function playCommand(sock, chatId, message) {
+    const tempDir = path.join(process.cwd(), 'temp');
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+    const uniqueId = `play_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const outputTemplate = path.join(tempDir, `${uniqueId}.%(ext)s`);
+    let downloadedFilePath = null;
+
     try {
         const text = message.message?.conversation || message.message?.extendedTextMessage?.text || '';
         const query = text.split(' ').slice(1).join(' ').trim();
@@ -54,119 +55,123 @@ async function playCommand(sock, chatId, message) {
             caption: `🎵 Fetching: *${video.title}*\n⏱ Duration: ${video.timestamp}\n\n_Please wait, downloading and converting to high quality MP3..._`
         }, { quoted: message });
 
-        let audioUrl = null;
-        let localFilePath = null;
+        const safeTitle = (video.title || 'song').replace(/[^\w\s-]/gi, '').trim().slice(0, 60) || 'song';
 
+        // 1. PRIMARY: yt-dlp + ffmpeg
         try {
-            const ytDlpPath = process.platform === 'win32' ? path.join(process.cwd(), 'yt-dlp.exe') : 'yt-dlp';
-            const ffmpegPath = process.platform === 'win32' ? path.join(process.cwd(), 'ffmpeg.exe') : 'ffmpeg';
+            const ytDlpExe = findExecutable('yt-dlp');
+            const ffmpegExe = findExecutable('ffmpeg');
 
-            if (fs.existsSync(ytDlpPath)) {
-                try {
-                    const tempDir = path.join(process.cwd(), 'temp');
-                    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-                    const fileName = `${Date.now()}.mp3`;
-                    localFilePath = path.join(tempDir, fileName);
+            const args = [
+                '-x',
+                '--audio-format', 'mp3',
+                '--audio-quality', '0',
+                '--no-playlist',
+                '--max-filesize', '50M',
+                '-o', outputTemplate
+            ];
 
-                    const safeTitle = video.title.replace(/[^\w\s]/gi, '').slice(0, 50);
-
-                    const conversionCmd = fs.existsSync(ffmpegPath)
-                        ? `"${ytDlpPath}" -x --audio-format mp3 --ffmpeg-location "${ffmpegPath}" -o "${localFilePath}" "${video.url}"`
-                        : `"${ytDlpPath}" -f "bestaudio[ext=m4a]" -o "${localFilePath}" "${video.url}"`;
-
-                    await execPromise(conversionCmd);
-
-                    if (fs.existsSync(localFilePath)) {
-                        const stats = fs.statSync(localFilePath);
-                        if (stats.size > 0) {
-                            await sock.sendMessage(chatId, {
-                                audio: { url: localFilePath },
-                                mimetype: 'audio/mpeg',
-                                fileName: `${safeTitle}.mp3`,
-                                ptt: false
-                            }, { quoted: message });
-
-                            return fs.unlinkSync(localFilePath);
-                        }
-                    }
-                } catch (e) {
-                    console.error('yt-dlp conversion failed:', e.message);
-                    if (localFilePath && fs.existsSync(localFilePath)) fs.unlinkSync(localFilePath);
-                }
+            if (fs.existsSync(ffmpegExe)) {
+                args.push('--ffmpeg-location', ffmpegExe);
             }
 
-            const encodedUrl = encodeURIComponent(video.url);
+            args.push(video.url);
 
-            try {
-                const params = new URLSearchParams();
-                params.append('url', video.url);
-                params.append('format', 'bestaudio[ext=m4a]/bestaudio/best');
-                
-                const res = await axios.post('http://localhost:8080/youtube-dl/q', params, {
-                    timeout: 30000
-                });
-                
-                if (res.data && res.data.url) {
-                    audioUrl = res.data.url;
-                } else if (res.data && res.data.info && res.data.info.url) {
-                    audioUrl = res.data.info.url;
-                }
-            } catch (e) {
-                console.error('Custom youtube-dl API failed:', e.message);
+            await execFilePromise(ytDlpExe, args, { timeout: 120000 });
+
+            const expectedMp3 = path.join(tempDir, `${uniqueId}.mp3`);
+            if (fs.existsSync(expectedMp3) && fs.statSync(expectedMp3).size > 0) {
+                downloadedFilePath = expectedMp3;
             }
-
-            if (!audioUrl) {
-                try {
-                    const res = await axios.get(`https://api.akuari.my.id/downloader/youtube?link=${encodedUrl}`);
-                    if (res.data && res.data.status === true && res.data.dl_link && res.data.dl_link.mp3) {
-                        audioUrl = res.data.dl_link.mp3;
-                    }
-                } catch (e) {
-                    console.error('Akuari API fallback failed:', e.message);
-                }
-            }
-
-            if (!audioUrl) {
-                try {
-                    const res = await axios.get(`https://api.siputzx.my.id/api/d/ytmp3?url=${encodedUrl}`);
-                    if (res.data && res.data.data && res.data.data.dl) {
-                        audioUrl = res.data.data.dl;
-                    }
-                } catch (e) {
-                    console.error('Siputzx API fallback failed:', e.message);
-                }
-            }
-
-            if (audioUrl) {
-                try {
-                    localFilePath = await downloadToTemp(audioUrl, '.mp3');
-                    await sock.sendMessage(chatId, {
-                        audio: { url: localFilePath },
-                        mimetype: 'audio/mpeg',
-                        fileName: `${video.title.replace(/[^\w\s]/gi, '')}.mp3`,
-                        ptt: false
-                    }, { quoted: message });
-                } catch (e) {
-                    console.error('Failed to download audioUrl to disk:', e.message);
-                    throw e;
-                } finally {
-                    if (localFilePath && fs.existsSync(localFilePath)) {
-                        fs.unlinkSync(localFilePath);
-                    }
-                }
-                return;
-            }
-
-            throw new Error("Failed to get audio from all available sources.");
-
-        } catch (err) {
-            console.error('Download process failed:', err);
-            await sock.sendMessage(chatId, { text: "❌ All download sources failed. Please try again later." }, { quoted: message });
+        } catch (e) {
+            console.error('[PLAY] yt-dlp primary download failed:', e.message);
         }
 
+        // 2. SECONDARY FALLBACK: @distube/ytdl-core
+        if (!downloadedFilePath) {
+            try {
+                const ytdl = require('@distube/ytdl-core');
+                const fallbackPath = path.join(tempDir, `${uniqueId}.mp3`);
+                const stream = ytdl(video.url, { filter: 'audioonly', quality: 'highestaudio' });
+                const writer = fs.createWriteStream(fallbackPath);
+
+                await new Promise((resolve, reject) => {
+                    stream.pipe(writer);
+                    writer.on('finish', resolve);
+                    writer.on('error', reject);
+                    stream.on('error', reject);
+                });
+
+                if (fs.existsSync(fallbackPath) && fs.statSync(fallbackPath).size > 0) {
+                    downloadedFilePath = fallbackPath;
+                }
+            } catch (e) {
+                console.error('[PLAY] @distube/ytdl-core fallback failed:', e.message);
+            }
+        }
+
+        // 3. TERTIARY FALLBACK: Online API
+        if (!downloadedFilePath) {
+            try {
+                const encodedUrl = encodeURIComponent(video.url);
+                const res = await axios.get(`https://api.siputzx.my.id/api/d/ytmp3?url=${encodedUrl}`, { timeout: 30000 });
+                if (res.data?.data?.dl) {
+                    const fallbackPath = path.join(tempDir, `${uniqueId}.mp3`);
+                    const response = await axios({
+                        url: res.data.data.dl,
+                        method: 'GET',
+                        responseType: 'stream',
+                        timeout: 60000,
+                        headers: { 'User-Agent': 'Mozilla/5.0' }
+                    });
+                    const writer = fs.createWriteStream(fallbackPath);
+                    response.data.pipe(writer);
+                    await new Promise((resolve, reject) => {
+                        writer.on('finish', resolve);
+                        writer.on('error', reject);
+                    });
+
+                    if (fs.existsSync(fallbackPath) && fs.statSync(fallbackPath).size > 0) {
+                        downloadedFilePath = fallbackPath;
+                    }
+                }
+            } catch (e) {
+                console.error('[PLAY] Third-party API fallback failed:', e.message);
+            }
+        }
+
+        // Send Audio File
+        if (downloadedFilePath && fs.existsSync(downloadedFilePath)) {
+            await sock.sendMessage(chatId, {
+                audio: { url: downloadedFilePath },
+                mimetype: 'audio/mpeg',
+                fileName: `${safeTitle}.mp3`,
+                ptt: false
+            }, { quoted: message });
+            return;
+        }
+
+        throw new Error('All download sources failed to produce a valid audio file.');
+
     } catch (err) {
-        console.error('Song command internal error:', err);
-        await sock.sendMessage(chatId, { text: '❌ Failed to process the request due to an internal error.' }, { quoted: message });
+        console.error('[PLAY ERROR] Download process failed:', err.message);
+        await sock.sendMessage(chatId, { text: '❌ All download sources failed. Please try again later.' }, { quoted: message });
+    } finally {
+        // Safe Cleanup: delete downloaded file and any intermediate files
+        try {
+            if (downloadedFilePath && fs.existsSync(downloadedFilePath)) {
+                fs.unlinkSync(downloadedFilePath);
+            }
+            // Check for any leftover temp files with uniqueId
+            const files = fs.readdirSync(tempDir);
+            for (const f of files) {
+                if (f.startsWith(uniqueId)) {
+                    try { fs.unlinkSync(path.join(tempDir, f)); } catch (e) { }
+                }
+            }
+        } catch (cleanupErr) {
+            console.error('[PLAY] Cleanup error:', cleanupErr.message);
+        }
     }
 }
 
