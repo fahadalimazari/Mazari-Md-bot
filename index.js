@@ -98,14 +98,22 @@ async function launch() {
       app.use(express.static(publicDir));
     }
 
+    let activePairingCount = 0;
+
     app.post('/api/session/pair', async (req, res) => {
       const { number } = req.body;
       if (!number) return res.status(400).json({ error: 'Phone number is required' });
       
-      // Enforce 30-bot capacity limit per server
-      if (capacityTracker.getCount() >= MAX_BOTS_PER_SERVER) {
+      const sanitizedNum = String(number).replace(/[^0-9]/g, '');
+      const isExisting = capacityTracker.hasSession(sanitizedNum);
+      const effectiveCount = capacityTracker.getCount() + (isExisting ? 0 : activePairingCount);
+
+      // Enforce 30-bot capacity limit per server (including in-flight pairing attempts for new numbers)
+      if (effectiveCount >= MAX_BOTS_PER_SERVER) {
         return res.status(429).json({ error: 'Server Full. Maximum capacity (30 bots) reached on this server.' });
       }
+
+      if (!isExisting) activePairingCount++;
 
       try {
         console.log(chalk.cyan(`🌐 [WEB] Pairing request received for ${number}`));
@@ -141,6 +149,8 @@ async function launch() {
       } catch (err) {
         console.error(chalk.yellow(`⚠️ Web pairing error for ${number}: ${err.message}`));
         if (!res.headersSent) res.status(500).json({ error: 'Internal server error while generating code.' });
+      } finally {
+        if (!isExisting) activePairingCount = Math.max(0, activePairingCount - 1);
       }
     });
 

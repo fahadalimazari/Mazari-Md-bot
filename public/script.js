@@ -170,6 +170,8 @@ async function loadAllServerStatuses() {
           if (formCard) {
             formCard.scrollIntoView({ behavior: 'smooth' });
           }
+          const phoneInputEl = document.getElementById('phone-input');
+          if (phoneInputEl) phoneInputEl.focus();
         });
         
         gridContainer.appendChild(card);
