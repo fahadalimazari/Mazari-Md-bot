@@ -1,6 +1,6 @@
 require('dotenv').config();
 const crypto = require('crypto');
-global.SERVER_ID = process.env.DYNO || process.env.SERVER_ID || ('local-' + process.pid + '-' + crypto.randomUUID().slice(0, 8));
+global.SERVER_ID = process.env.SERVER_ID || process.env.DYNO || ('local-' + process.pid + '-' + crypto.randomUUID().slice(0, 8));
 const MAX_BOTS_PER_SERVER = parseInt(process.env.MAX_BOTS_PER_SERVER, 10) || 30;
 
 const { initSession, question, capacityTracker } = require('./lib/baileys-helper');
