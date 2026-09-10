@@ -46,25 +46,28 @@ async function handleAdminlockPromotion(sock, groupId, participants, author) {
         if (!authorJid) return;
 
         // If the bot itself did the action, ignore to prevent loops
-        if (authorJid === normalizeJid(sock.user.id) || (sock.user.lid && authorJid === normalizeJid(sock.user.lid))) {
+        const botJid = normalizeJid(sock.user?.id);
+        const botLid = sock.user?.lid ? normalizeJid(sock.user.lid) : null;
+        if (authorJid === botJid || (botLid && authorJid === botLid)) {
             return;
         }
 
-        // Owner/Sudo Bypass
+        // Owner/Sudo Bypass: Action performer is Bot Owner or Sudo user
         if (await isOwnerOrSudo(authorJid, sock, groupId)) {
             return;
         }
 
-        // Check if author is group owner and bot is admin
+        // Check if bot is admin and get group owner
         let groupOwner = "";
         let botIsAdmin = false;
         try {
             const meta = await sock.groupMetadata(groupId);
             groupOwner = normalizeJid(meta.owner || meta.subjectOwner);
-            const botJid = normalizeJid(sock.user.id);
             
-            // Check bot admin status
-            const botParticipant = meta.participants.find(p => normalizeJid(p.id) === botJid);
+            const botParticipant = meta.participants?.find(p => {
+                const pJid = normalizeJid(p.id);
+                return pJid === botJid || (botLid && pJid === botLid);
+            });
             botIsAdmin = botParticipant && (botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin');
         } catch (e) {}
 
@@ -77,31 +80,25 @@ async function handleAdminlockPromotion(sock, groupId, participants, author) {
             return; // Group owner has full control
         }
 
-        const demoteSet = new Set();
+        const demoteList = [];
         
-        // 1. Demote the promoter
-        demoteSet.add(authorJid);
+        // 1. Demote the promoter (author)
+        if (authorJid !== groupOwner && authorJid !== botJid && authorJid !== botLid) {
+            demoteList.push(authorJid);
+        }
 
-        // 2. Demote the targets (undo their promotion)
-        participants.forEach(p => {
+        // 2. Demote the promoted targets (undo their promotion)
+        for (const p of participants) {
             const targetJid = normalizeJid(p);
-            if (targetJid && targetJid !== groupOwner) {
-                demoteSet.add(targetJid);
+            if (targetJid && targetJid !== groupOwner && targetJid !== botJid && targetJid !== botLid && !demoteList.includes(targetJid)) {
+                demoteList.push(targetJid);
             }
-        });
-
-        const demoteList = Array.from(demoteSet).filter(jid => {
-            if (!jid) return false;
-            if (jid === normalizeJid(sock.user.id)) return false; 
-            if (sock.user.lid && jid === normalizeJid(sock.user.lid)) return false; 
-            if (jid === groupOwner) return false;
-            return jid.includes('@'); // Must be a valid JID
-        });
+        }
 
         if (demoteList.length > 0) {
             console.log(`🚨 [ADMINLOCK] Reversing Promotion (Author: ${authorJid}):`, demoteList);
             
-            // Execute demotions. Do it one by one to avoid Baileys batching issues where one failure aborts the whole array
+            // Execute demotions one by one to prevent batching failures
             for (const jid of demoteList) {
                 try {
                     await sock.groupParticipantsUpdate(groupId, [jid], 'demote');
@@ -110,10 +107,8 @@ async function handleAdminlockPromotion(sock, groupId, participants, author) {
                 }
             }
             
-            const authorShort = authorJid.split('@')[0];
-            const targetsShort = participants.map(p => `@${normalizeJid(p).split('@')[0]}`).join(', ');
-            
-            const ui = `╭─〔 ⎔ *𝗔𝗗𝗠𝗜𝗡 𝗟𝗢𝗖𝗞* ⎔ 〕\n│ ⚠️ *𝗨𝗡𝗔𝗨𝗧𝗛𝗢𝗥𝗜𝗭𝗘𝗗 𝗣𝗥𝗢𝗠𝗢𝗧𝗜𝗢𝗡*\n│ 👤 *𝗣𝗥𝗢𝗠𝗢𝗧𝗘𝗥* : @${authorShort}\n│ 👥 *𝗧𝗔𝗥𝗚𝗘𝗧𝗦* : ${targetsShort}\n│ 🔄 *𝗥𝗢𝗟𝗘𝗦 𝗥𝗘𝗩𝗘𝗥𝗦𝗘𝗗*\n│ ⚡ *𝗧𝗥𝗬 𝗔𝗚𝗔𝗜? 𝗡𝗔𝗛 — 𝗧𝗛𝗜𝗦 𝗚𝗥𝗢𝗨𝗣 𝗜𝗦 𝗟𝗢𝗖𝗞𝗘𝗗.*`;
+            const authorShort = authorJid.split('@')[0].split(':')[0];
+            const ui = `╭─〔 *𝗔𝗗𝗠𝗜𝗡 𝗟𝗢𝗖𝗞* 〕\n│ ⚠️ *𝗨𝗡𝗔𝗨𝗧𝗛𝗢𝗥𝗜𝗭𝗘𝗗*\n│ 👤 @${authorShort}\n╰────────────────╯`;
             
             const mentions = [authorJid, ...participants.map(p => normalizeJid(p))];
             
@@ -144,69 +139,85 @@ async function handleAdminlockDemotion(sock, groupId, participants, author) {
         if (!authorJid) return;
 
         // If the bot itself did the action, ignore to prevent loops
-        if (authorJid === normalizeJid(sock.user.id) || (sock.user.lid && authorJid === normalizeJid(sock.user.lid))) {
+        const botJid = normalizeJid(sock.user?.id);
+        const botLid = sock.user?.lid ? normalizeJid(sock.user.lid) : null;
+        if (authorJid === botJid || (botLid && authorJid === botLid)) {
             return;
         }
 
-        // Owner/Sudo Bypass
+        // Owner/Sudo Bypass: Action performer is Bot Owner or Sudo user
         if (await isOwnerOrSudo(authorJid, sock, groupId)) {
             return;
         }
 
-        // Check if author is group owner
+        // Check if bot is admin and get group owner
         let groupOwner = "";
+        let botIsAdmin = false;
         try {
             const meta = await sock.groupMetadata(groupId);
             groupOwner = normalizeJid(meta.owner || meta.subjectOwner);
+
+            const botParticipant = meta.participants?.find(p => {
+                const pJid = normalizeJid(p.id);
+                return pJid === botJid || (botLid && pJid === botLid);
+            });
+            botIsAdmin = botParticipant && (botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin');
         } catch (e) {}
+
+        if (!botIsAdmin) {
+            console.log(`🚨 [ADMINLOCK] Cannot reverse demotion. Bot is not admin in ${groupId}`);
+            return;
+        }
 
         if (authorJid === groupOwner) {
             return; // Group owner has full control
         }
 
-        const promoteSet = new Set();
-        const demoteSet = new Set();
+        const promoteList = [];
+        const demoteList = [];
 
-        // 1. Demote the demoter
-        demoteSet.add(authorJid);
-
-        // 2. Promote the targets back
-        participants.forEach(p => {
+        // 1. Promote back the demoted targets
+        for (const p of participants) {
             const targetJid = normalizeJid(p);
-            if (targetJid && targetJid !== groupOwner) {
-                promoteSet.add(targetJid);
+            if (targetJid && targetJid !== groupOwner && targetJid.length > 5) {
+                promoteList.push(targetJid);
             }
-        });
+        }
 
-        const demoteList = Array.from(demoteSet).filter(jid => {
-            if (!jid) return false;
-            if (jid === normalizeJid(sock.user.id)) return false; 
-            if (sock.user.lid && jid === normalizeJid(sock.user.lid)) return false; 
-            if (jid === groupOwner) return false;
-            return jid.length > 5;
-        });
-
-        const promoteList = Array.from(promoteSet).filter(jid => {
-            if (!jid) return false;
-            return jid.length > 5;
-        });
+        // 2. Demote the demoter (author)
+        if (authorJid !== groupOwner && authorJid !== botJid && authorJid !== botLid && authorJid.length > 5) {
+            demoteList.push(authorJid);
+        }
 
         let actionTaken = false;
 
         if (promoteList.length > 0) {
             console.log(`🚨 [ADMINLOCK] Reversing Demotion - Promoting back targets:`, promoteList);
-            await sock.groupParticipantsUpdate(groupId, promoteList, 'promote');
-            actionTaken = true;
+            for (const jid of promoteList) {
+                try {
+                    await sock.groupParticipantsUpdate(groupId, [jid], 'promote');
+                    actionTaken = true;
+                } catch (e) {
+                    console.error(`🚨 [ADMINLOCK] Failed to promote back ${jid}:`, e.message);
+                }
+            }
         }
 
         if (demoteList.length > 0) {
             console.log(`🚨 [ADMINLOCK] Reversing Demotion - Demoting author (${authorJid}):`, demoteList);
-            await sock.groupParticipantsUpdate(groupId, demoteList, 'demote');
-            actionTaken = true;
+            for (const jid of demoteList) {
+                try {
+                    await sock.groupParticipantsUpdate(groupId, [jid], 'demote');
+                    actionTaken = true;
+                } catch (e) {
+                    console.error(`🚨 [ADMINLOCK] Failed to demote ${jid}:`, e.message);
+                }
+            }
         }
 
         if (actionTaken) {
-            const ui = `╭─〔 ⎔ *𝗔𝗗𝗠𝗜𝗡 𝗟𝗢𝗖𝗞* ⎔ 〕\n│ ⚠️ *𝗨𝗡𝗔𝗨𝗧𝗛𝗢𝗥𝗜𝗭𝗘𝗗 𝗗𝗘𝗠𝗢𝗧𝗜𝗢𝗡*\n│ 👤 *𝗔𝗖𝗧𝗜𝗢𝗡 𝗕𝗬* : @${authorJid.split('@')[0]}\n│ 🔄 *𝗥𝗢𝗟𝗘𝗦 𝗥𝗘𝗩𝗘𝗥𝗦𝗘𝗗*\n│ ⚡ *𝗧𝗥𝗬 𝗔𝗚𝗔𝗜? 𝗡𝗔𝗛 — 𝗧𝗛𝗜𝗦 𝗚𝗥𝗢𝗨𝗣 𝗜𝗦 𝗟𝗢𝗖𝗞𝗘𝗗.*`;
+            const authorShort = authorJid.split('@')[0].split(':')[0];
+            const ui = `╭─〔 *𝗔𝗗𝗠𝗜𝗡 𝗟𝗢𝗖𝗞* 〕\n│ ⚠️ *𝗨𝗡𝗔𝗨𝗧𝗛𝗢𝗥𝗜𝗭𝗘𝗗*\n│ 👤 @${authorShort}\n╰────────────────╯`;
             
             await sock.sendMessage(groupId, { 
                 text: ui,
