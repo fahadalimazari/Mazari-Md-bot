@@ -1,28 +1,89 @@
-const { setAntiStatus, getAntiStatus, isSudo } = require('../lib/index');
+const { setAntiStatus, getAntiStatus, isSudo, incrementWarningCount, resetWarningCount } = require('../lib/index');
 const isAdmin = require('../lib/isAdmin');
 
 async function handleAntiStatusCommand(sock, chatId, userMessage, senderId, isSenderAdmin, message) {
     try {
+        const { isSenderAdmin: freshIsSenderAdmin, isBotAdmin } = await isAdmin(sock, chatId, senderId, true);
         const isSenderSudo = await isSudo(senderId);
-        if (!isSenderAdmin && !isSenderSudo) {
-            await sock.sendMessage(chatId, { text: '```For Group Admins Only!```' }, { quoted: message });
+        const canExecute = isSenderAdmin || freshIsSenderAdmin || isSenderSudo;
+
+        if (!canExecute) {
+            const ui = `╭─〔 ⎔ *𝗔𝗗𝗠𝗜𝗡 𝗢𝗡𝗟𝗬* ⎔ 〕\n│ ⚠️ *𝗧𝗛𝗜𝗦 𝗖𝗢𝗠𝗠𝗔𝗡𝗗 𝗜𝗦 𝗙𝗢𝗥 𝗚𝗥𝗢𝗨𝗣 𝗔𝗗𝗠𝗜𝗡𝗦*`;
+            await sock.sendMessage(chatId, { text: ui }, { quoted: message });
             return;
         }
 
-        const args = userMessage.slice(8).toLowerCase().trim().split(' ').filter(Boolean);
-        const action = args[0];
+        if (!isBotAdmin) {
+            const ui = `╭─〔 ⎔ *𝗕𝗢𝗧 𝗔𝗗𝗠𝗜𝗡 𝗥𝗘𝗤𝗨𝗜𝗥𝗘𝗗* ⎔ 〕\n│ ⚠️ *𝗣𝗟𝗘𝗔𝗦𝗘 𝗠𝗔𝗞𝗘 𝗧𝗛𝗘 𝗕𝗢𝗧 𝗔𝗡 𝗔𝗗𝗠𝗜𝗡 𝗙𝗜𝗥𝗦𝗧*`;
+            await sock.sendMessage(chatId, { text: ui }, { quoted: message });
+            return;
+        }
 
-        if (action === 'on') {
-            await setAntiStatus(chatId, true);
-            const ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🛡️ *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗢𝗡*\n│ ✦ *𝗦𝗧𝗔𝗧𝗨𝗦 𝗠𝗘𝗡𝗧𝗜𝗢𝗡𝗦 𝗕𝗟𝗢𝗖𝗞𝗘𝗗*\n╰──────────────`;
-            await sock.sendMessage(chatId, { text: ui }, { quoted: message });
-        } else if (action === 'off') {
-            await setAntiStatus(chatId, false);
-            const ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🔓 *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗢𝗙𝗙*\n│ ✦ *𝗦𝗧𝗔𝗧𝗨𝗦 𝗠𝗘𝗡𝗧𝗜𝗢𝗡𝗦 𝗔𝗟𝗟𝗢𝗪𝗘𝗗*\n╰──────────────`;
-            await sock.sendMessage(chatId, { text: ui }, { quoted: message });
+        const parts = userMessage.trim().split(/\s+/);
+        const action = parts[1] ? parts[1].toLowerCase() : '';
+
+        if (!action || action === 'status') {
+            const status = await getAntiStatus(chatId);
+            if (!status || !status.enabled) {
+                const ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜𝗚𝗠 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🔓 *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗜𝗡𝗔𝗖𝗧𝗜𝗩𝗘*\n╰────────────────╯`;
+                await sock.sendMessage(chatId, { text: ui }, { quoted: message });
+            } else {
+                const modeLabel = (status.action || 'warn').toUpperCase();
+                let ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜𝗚𝗠 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🔒 *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗔𝗖𝗧𝗜𝗩𝗘*\n│ ⚙️ *𝗠𝗢𝗗𝗘* : *${modeLabel}*`;
+                if (status.action === 'warn' || !status.action) {
+                    ui += `\n│ ⚠️ *𝗟𝗜𝗠𝗜𝗧* : *𝟯 𝗪𝗔𝗥𝗡𝗜𝗡𝗚𝗦*`;
+                }
+                ui += `\n╰────────────────╯`;
+                await sock.sendMessage(chatId, { text: ui }, { quoted: message });
+            }
+            return;
+        }
+
+        switch (action) {
+            case 'on': {
+                await setAntiStatus(chatId, true, 'warn');
+                const ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜𝗚𝗠 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🔒 *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗔𝗖𝗧𝗜𝗩𝗘*\n│ ⚙️ *𝗠𝗢𝗗𝗘* : *WARN*\n│ ⚠️ *𝗟𝗜𝗠𝗜𝗧* : *𝟯 𝗪𝗔𝗥𝗡𝗜𝗡𝗚𝗦*\n╰────────────────╯`;
+                await sock.sendMessage(chatId, { text: ui }, { quoted: message });
+                break;
+            }
+
+            case 'warn': {
+                await setAntiStatus(chatId, true, 'warn');
+                const ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜𝗚𝗠 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🔒 *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗔𝗖𝗧𝗜𝗩𝗘*\n│ ⚙️ *𝗠𝗢𝗗𝗘* : *WARN*\n│ ⚠️ *𝗟𝗜𝗠𝗜𝗧* : *𝟯 𝗪𝗔𝗥𝗡𝗜𝗡𝗚𝗦*\n╰────────────────╯`;
+                await sock.sendMessage(chatId, { text: ui }, { quoted: message });
+                break;
+            }
+
+            case 'delete':
+            case 'del': {
+                await setAntiStatus(chatId, true, 'delete');
+                const ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜𝗚𝗠 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🔒 *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗔𝗖𝗧𝗜𝗩𝗘*\n│ ⚙️ *𝗠𝗢𝗗𝗘* : *DELETE*\n╰────────────────╯`;
+                await sock.sendMessage(chatId, { text: ui }, { quoted: message });
+                break;
+            }
+
+            case 'kick': {
+                await setAntiStatus(chatId, true, 'kick');
+                const ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜𝗚𝗠 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🔒 *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗔𝗖𝗧𝗜𝗩𝗘*\n│ ⚙️ *𝗠𝗢𝗗𝗘* : *KICK*\n╰────────────────╯`;
+                await sock.sendMessage(chatId, { text: ui }, { quoted: message });
+                break;
+            }
+
+            case 'off': {
+                await setAntiStatus(chatId, false);
+                const ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜𝗚𝗠 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ 🔓 *𝗦𝗧𝗔𝗧𝗨𝗦* : *𝗜𝗡𝗔𝗖𝗧𝗜𝗩𝗘*\n╰────────────────╯`;
+                await sock.sendMessage(chatId, { text: ui }, { quoted: message });
+                break;
+            }
+
+            default: {
+                const ui = `╭─〔 ⎔ *𝗔𝗡𝗧𝗜𝗚𝗠 𝗦𝗧𝗔𝗧𝗨𝗦* ⎔ 〕\n│ ❌ *𝗜𝗡𝗩𝗔𝗟𝗜𝗗 𝗢𝗣𝗧𝗜𝗢𝗡*\n│ ⟡ *𝗨𝗦𝗘* : \`.antigm on\`\n│ ⟡ *𝗨𝗦𝗘* : \`.antigm warn\`\n│ ⟡ *𝗨𝗦𝗘* : \`.antigm delete\`\n│ ⟡ *𝗨𝗦𝗘* : \`.antigm kick\`\n│ ⟡ *𝗨𝗦𝗘* : \`.antigm off\`\n╰────────────────╯`;
+                await sock.sendMessage(chatId, { text: ui }, { quoted: message });
+                break;
+            }
         }
     } catch (error) {
-        console.error('Error in antistatus command:', error);
+        console.error('Error in antistatus/antigm command:', error);
     }
 }
 
@@ -31,13 +92,13 @@ async function handleAntiStatusDetection(sock, chatId, message, senderId) {
         // Only run detection if message exists
         if (!message || !message.message) return;
 
-        // Check if AntiStatus is enabled for this group
-        const isEnabled = await getAntiStatus(chatId);
-        if (!isEnabled) return;
+        // Check if AntiStatus/AntiGM is enabled for this group
+        const antiConfig = await getAntiStatus(chatId);
+        if (!antiConfig || !antiConfig.enabled) return;
 
-        // Detect Status Mention
-        // Baileys contextInfo.remoteJid === 'status@broadcast' for status replies
-        const extendedTextMessage = message.message.extendedTextMessage;
+        // Detect Status Mention / Group Mention
+        const msg = message.message;
+        const extendedTextMessage = msg.extendedTextMessage;
         const contextInfo = extendedTextMessage?.contextInfo;
         
         let isStatusMention = false;
@@ -47,13 +108,15 @@ async function handleAntiStatusDetection(sock, chatId, message, senderId) {
         }
         
         // Check if the message is explicitly a group status mention
-        if (message.message.groupStatusMentionMessage || message.message.statusMentionMessage) {
+        if (msg.groupStatusMentionMessage || msg.statusMentionMessage || msg.groupStatusMessage || msg.groupStatusMessageV2) {
             isStatusMention = true;
         }
-        
-        // Log to find the exact structure if it's detected
-        if (isStatusMention) {
-            console.log('DEBUG MSG DETECTED STATUS MENTION (Exact Match)');
+
+        if (msg.imageMessage?.contextInfo?.remoteJid === 'status@broadcast' || 
+            msg.videoMessage?.contextInfo?.remoteJid === 'status@broadcast' || 
+            msg.audioMessage?.contextInfo?.remoteJid === 'status@broadcast' ||
+            msg.documentMessage?.contextInfo?.remoteJid === 'status@broadcast') {
+            isStatusMention = true;
         }
         
         if (!isStatusMention) return;
@@ -64,30 +127,95 @@ async function handleAntiStatusDetection(sock, chatId, message, senderId) {
         const isBotAdmin = adminData.isBotAdmin;
         const isSenderSudo = await isSudo(senderId);
         
-        console.log(`DEBUG: senderId=${senderId}, isSenderAdmin=${isSenderAdmin}, isBotAdmin=${isBotAdmin}, isSudo=${isSenderSudo}, fromMe=${message.key.fromMe}`);
-        
-        // Never delete message from Admin or Owner/Sudo or the bot itself
+        // Never delete/punish Admin or Owner/Sudo or the bot itself
         if (isSenderAdmin || isSenderSudo || message.key.fromMe) {
-            console.log('DEBUG: Skipping delete due to admin/owner/fromMe');
             return;
         }
         
-        // Sender is a normal member, delete the message
-        if (isBotAdmin) {
-            const deleteKey = { ...message.key };
-            // If the message has a LID, use the standard JID for deletion if available
-            if (deleteKey.participant && deleteKey.participant.endsWith('@lid') && deleteKey.participantAlt) {
-                deleteKey.participant = deleteKey.participantAlt;
-            }
-            console.log('DEBUG: Attempting to delete message with key:', deleteKey);
+        if (!isBotAdmin) {
+            return;
+        }
+
+        const deleteKey = { ...message.key };
+        if (deleteKey.participant && deleteKey.participant.endsWith('@lid') && deleteKey.participantAlt) {
+            deleteKey.participant = deleteKey.participantAlt;
+        }
+
+        const mode = (antiConfig.action || 'warn').toLowerCase();
+
+        if (mode === 'delete' || mode === 'del') {
+            // Delete offending message
             try {
                 await sock.sendMessage(chatId, { delete: deleteKey });
-                console.log('DEBUG: Delete successful');
-            } catch(e) {
-                console.log('DEBUG: Delete failed:', e);
+            } catch (e) {
+                console.error('AntiGM delete error:', e.message);
+            }
+            const ui = `╭─〔 ⎔ 𝗔𝗡𝗧𝗜𝗚𝗠 ⎔ 〕\n│ 🗑️ 𝗔𝗖𝗧𝗜𝗢𝗡 : 𝗠𝗘𝗦𝗦𝗔𝗚𝗘 𝗗𝗘𝗟𝗘𝗧𝗘𝗗\n╰────────────────╯`;
+            try {
+                await sock.sendMessage(chatId, { text: ui }, { quoted: message });
+            } catch (e) {
+                await sock.sendMessage(chatId, { text: ui });
+            }
+            return;
+        }
+
+        if (mode === 'kick') {
+            // Delete offending message first
+            try {
+                await sock.sendMessage(chatId, { delete: deleteKey });
+            } catch (e) {
+                console.error('AntiGM delete error:', e.message);
+            }
+            // Immediately kick the user
+            try {
+                await sock.groupParticipantsUpdate(chatId, [senderId], 'remove');
+            } catch (e) {
+                console.error('AntiGM kick error:', e.message);
+            }
+            const ui = `╭─〔 ⎔ 𝗔𝗡𝗧𝗜𝗚𝗠 ⎔ 〕\n│ 👢 𝗔𝗖𝗧𝗜𝗢𝗡 : 𝗨𝗦𝗘𝗥 𝗞𝗜𝗖𝗞𝗘𝗗\n╰────────────────╯`;
+            try {
+                await sock.sendMessage(chatId, { text: ui, mentions: [senderId] }, { quoted: message });
+            } catch (e) {
+                await sock.sendMessage(chatId, { text: ui, mentions: [senderId] });
+            }
+            return;
+        }
+
+        // Default: WARN mode
+        // Delete offending message
+        try {
+            await sock.sendMessage(chatId, { delete: deleteKey });
+        } catch (e) {
+            console.error('AntiGM delete error:', e.message);
+        }
+
+        const warnCount = await incrementWarningCount(chatId, senderId);
+        const userTag = `@${senderId.split('@')[0].split(':')[0]}`;
+
+        if (warnCount >= 3) {
+            // 3rd violation: Kick immediately and reset warning counter
+            try {
+                await sock.groupParticipantsUpdate(chatId, [senderId], 'remove');
+            } catch (e) {
+                console.error('AntiGM kick error on 3rd warning:', e.message);
+            }
+            await resetWarningCount(chatId, senderId);
+
+            const ui = `╭─〔 ⎔ 𝗔𝗡𝗧𝗜𝗚𝗠 𝗪𝗔𝗥𝗡𝗜𝗡𝗚 ⎔ 〕\n│ ⚠️ 𝗪𝗔𝗥𝗡𝗜𝗡𝗚 : 𝟯/𝟯\n│ 🗑️ 𝗠𝗘𝗦𝗦𝗔𝗚𝗘 : 𝗗𝗘𝗟𝗘𝗧𝗘𝗗\n│ 👢 𝗔𝗖𝗧𝗜𝗢𝗡 : 𝗨𝗦𝗘𝗥 𝗞𝗜𝗖𝗞𝗘𝗗\n╰────────────────╯`;
+            try {
+                await sock.sendMessage(chatId, { text: ui, mentions: [senderId] }, { quoted: message });
+            } catch (e) {
+                await sock.sendMessage(chatId, { text: ui, mentions: [senderId] });
             }
         } else {
-            console.log('DEBUG: Bot is not admin, cannot delete');
+            const boldMap = { 1: '𝟭', 2: '𝟮', 3: '𝟯' };
+            const numStr = boldMap[warnCount] || warnCount;
+            const ui = `╭─〔 ⎔ 𝗔𝗡𝗧𝗜𝗚𝗠 𝗪𝗔𝗥𝗡𝗜𝗡𝗚 ⎔ 〕\n│ ⚠️ 𝗪𝗔𝗥𝗡𝗜𝗡𝗚 : ${numStr}/𝟯\n│ 👤 𝗨𝗦𝗘𝗥 : ${userTag}\n╰────────────────╯`;
+            try {
+                await sock.sendMessage(chatId, { text: ui, mentions: [senderId] }, { quoted: message });
+            } catch (e) {
+                await sock.sendMessage(chatId, { text: ui, mentions: [senderId] });
+            }
         }
     } catch (error) {
         console.error('Error in antistatus detection:', error);
