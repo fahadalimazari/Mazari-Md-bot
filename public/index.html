@@ -31,6 +31,7 @@
     </div>
     <nav class="nav">
       <a href="#home" class="nav-item active"><i class="fas fa-home"></i> Home</a>
+      <a href="#servers-status" class="nav-item"><i class="fas fa-server"></i> Servers</a>
       <a href="#features" class="nav-item"><i class="fas fa-star"></i> Features</a>
       <a href="#how-to-pair" class="nav-item"><i class="fas fa-question-circle"></i> How to Pair</a>
     </nav>
@@ -65,6 +66,14 @@
             </div>
           </div>
           
+          <div class="form-group">
+            <label><i class="fas fa-server"></i> Select Server</label>
+            <div class="input-wrapper custom-server-select">
+              <select id="server-selector" class="server-select-input"></select>
+            </div>
+            <p id="selected-server-info" class="help-text"><i class="far fa-check-circle text-red"></i> Selected server handles your pairing request directly</p>
+          </div>
+
           <div class="form-group">
             <label>WhatsApp Number</label>
             <div class="input-wrapper custom-phone-input">
@@ -163,6 +172,28 @@
           <div class="expire-notice">
             <i class="far fa-clock text-red"></i>
             <p>The code expires in <span class="text-red font-bold">2 minutes</span>.<br>Generate a new one if it expires.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Server Status & Capacity Section -->
+    <div id="servers-status" class="servers-status-section">
+      <div class="card glass-card servers-status-card">
+        <div class="card-header servers-status-header">
+          <div class="icon-box"><i class="fas fa-network-wired"></i></div>
+          <div class="header-text">
+            <h2>LIVE SERVER CAPACITY STATUS (48 SERVERS)</h2>
+            <p class="text-red">Maximum capacity: 30 Bots per Server. Real-time active session monitoring.</p>
+          </div>
+          <button id="refresh-servers-btn" class="btn-secondary refresh-btn" title="Refresh Server Status">
+            <i class="fas fa-sync-alt"></i> Refresh Status
+          </button>
+        </div>
+        
+        <div id="servers-grid" class="servers-grid">
+          <div class="loading-servers">
+            <i class="fas fa-spinner fa-spin text-red"></i> Loading real-time status for all 48 servers...
           </div>
         </div>
       </div>

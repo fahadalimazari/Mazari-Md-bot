@@ -1,7 +1,7 @@
 require('dotenv').config();
 const crypto = require('crypto');
 global.SERVER_ID = process.env.DYNO || process.env.SERVER_ID || ('local-' + process.pid + '-' + crypto.randomUUID().slice(0, 8));
-const MAX_BOTS_PER_SERVER = parseInt(process.env.MAX_BOTS_PER_SERVER, 10) || 60;
+const MAX_BOTS_PER_SERVER = parseInt(process.env.MAX_BOTS_PER_SERVER, 10) || 30;
 
 const { initSession, question, capacityTracker } = require('./lib/baileys-helper');
 const supabase = require('./lib/supabase');
@@ -102,6 +102,11 @@ async function launch() {
       const { number } = req.body;
       if (!number) return res.status(400).json({ error: 'Phone number is required' });
       
+      // Enforce 30-bot capacity limit per server
+      if (capacityTracker.getCount() >= MAX_BOTS_PER_SERVER) {
+        return res.status(429).json({ error: 'Server Full. Maximum capacity (30 bots) reached on this server.' });
+      }
+
       try {
         console.log(chalk.cyan(`🌐 [WEB] Pairing request received for ${number}`));
         
@@ -139,14 +144,18 @@ async function launch() {
       }
     });
 
-    // ── GET /api/health ─────────────────────────────────────────────
-    app.get('/api/health', (req, res) => {
+    // ── GET /api/health & GET /api/server/status ───────────────────
+    app.get(['/api/health', '/api/server/status'], (req, res) => {
+      const current = capacityTracker.getCount();
+      const max = MAX_BOTS_PER_SERVER;
+      const isFull = current >= max;
       res.json({
         server_id: global.SERVER_ID,
-        status: 'ONLINE',
-        current_sessions: capacityTracker.getCount(),
-        max_sessions: MAX_BOTS_PER_SERVER,
-        available_slots: MAX_BOTS_PER_SERVER - capacityTracker.getCount(),
+        status: isFull ? 'FULL' : 'ONLINE',
+        current_sessions: current,
+        max_sessions: max,
+        available_slots: Math.max(0, max - current),
+        is_full: isFull,
         uptime: Math.floor(process.uptime())
       });
     });

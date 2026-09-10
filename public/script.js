@@ -55,17 +55,175 @@ const servers = [
   { name: 'Server 48', url: 'https://mazari-bot-48-3bdf66aa2289.herokuapp.com/api/session/pair' }
 ];
 
+// Map to hold live server status data
+const serverStatusMap = new Map();
+
+async function fetchSingleServerStatus(server) {
+  const healthUrl = server.url.replace('/api/session/pair', '/api/health');
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 4000);
+  
+  try {
+    const res = await fetch(healthUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const current = typeof data.current_sessions === 'number' ? data.current_sessions : 0;
+    const max = typeof data.max_sessions === 'number' ? data.max_sessions : 30;
+    const available = typeof data.available_slots === 'number' ? data.available_slots : Math.max(0, max - current);
+    const isFull = current >= max;
+    
+    return {
+      name: server.name,
+      url: server.url,
+      status: isFull ? 'FULL' : 'ONLINE',
+      current,
+      max,
+      available,
+      isFull
+    };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    return {
+      name: server.name,
+      url: server.url,
+      status: 'OFFLINE',
+      current: 0,
+      max: 30,
+      available: 0,
+      isFull: false
+    };
+  }
+}
+
+async function loadAllServerStatuses() {
+  const gridContainer = document.getElementById('servers-grid');
+  const serverSelector = document.getElementById('server-selector');
+  const refreshBtn = document.getElementById('refresh-servers-btn');
+  
+  if (refreshBtn) refreshBtn.classList.add('spinning');
+  
+  const results = await Promise.all(servers.map(server => fetchSingleServerStatus(server)));
+  
+  if (refreshBtn) refreshBtn.classList.remove('spinning');
+  
+  // Populate dropdown options & status grid
+  if (serverSelector) {
+    const selectedVal = serverSelector.value;
+    serverSelector.innerHTML = '';
+    
+    if (gridContainer) gridContainer.innerHTML = '';
+    
+    results.forEach((st) => {
+      serverStatusMap.set(st.url, st);
+      
+      // Update dropdown option
+      const option = document.createElement('option');
+      option.value = st.url;
+      
+      let statusLabel = '';
+      if (st.status === 'ONLINE') {
+        statusLabel = `[ONLINE - ${st.current}/${st.max} (${st.available} Available)]`;
+      } else if (st.status === 'FULL') {
+        statusLabel = `[FULL - ${st.current}/${st.max}]`;
+      } else {
+        statusLabel = `[OFFLINE]`;
+      }
+      
+      option.textContent = `${st.name} ${statusLabel}`;
+      serverSelector.appendChild(option);
+      
+      // Render Grid Card
+      if (gridContainer) {
+        const card = document.createElement('div');
+        card.className = `server-card ${st.status.toLowerCase()}`;
+        card.setAttribute('data-url', st.url);
+        
+        let badgeClass = 'badge-online';
+        if (st.status === 'FULL') badgeClass = 'badge-full';
+        if (st.status === 'OFFLINE') badgeClass = 'badge-offline';
+        
+        const pct = Math.min(100, Math.round((st.current / st.max) * 100));
+        
+        card.innerHTML = `
+          <div class="server-card-header">
+            <span class="server-name">${st.name}</span>
+            <span class="server-badge ${badgeClass}">${st.status}</span>
+          </div>
+          <div class="server-card-body">
+            <div class="capacity-stats">
+              <span class="stat-counts"><i class="fas fa-robot"></i> ${st.current} / ${st.max}</span>
+              <span class="stat-available">${st.status === 'FULL' ? '0 Available' : st.available + ' Available'}</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill ${pct >= 100 ? 'fill-full' : (pct >= 80 ? 'fill-warn' : 'fill-ok')}" style="width: ${pct}%;"></div>
+            </div>
+          </div>
+        `;
+        
+        card.addEventListener('click', () => {
+          if (serverSelector) {
+            serverSelector.value = st.url;
+            updateSelectedServerInfo();
+          }
+          const formCard = document.querySelector('.form-card');
+          if (formCard) {
+            formCard.scrollIntoView({ behavior: 'smooth' });
+          }
+        });
+        
+        gridContainer.appendChild(card);
+      }
+    });
+    
+    if (selectedVal && Array.from(serverSelector.options).some(o => o.value === selectedVal)) {
+      serverSelector.value = selectedVal;
+    }
+    updateSelectedServerInfo();
+  }
+}
+
+function updateSelectedServerInfo() {
+  const serverSelector = document.getElementById('server-selector');
+  const infoEl = document.getElementById('selected-server-info');
+  if (!serverSelector || !infoEl) return;
+  
+  const st = serverStatusMap.get(serverSelector.value);
+  if (st) {
+    if (st.status === 'FULL') {
+      infoEl.innerHTML = `<i class="fas fa-exclamation-triangle text-red"></i> <strong class="text-red">${st.name} is FULL (${st.current}/${st.max}).</strong> Please select another server with available capacity.`;
+    } else if (st.status === 'OFFLINE') {
+      infoEl.innerHTML = `<i class="fas fa-times-circle text-red"></i> <strong>${st.name} appears OFFLINE.</strong> Pairing might fail or timeout.`;
+    } else {
+      infoEl.innerHTML = `<i class="far fa-check-circle text-red"></i> <strong>${st.name} ONLINE:</strong> ${st.current}/${st.max} bots (${st.available} slots available)`;
+    }
+  } else {
+    infoEl.innerHTML = `<i class="far fa-check-circle text-red"></i> Selected server handles your pairing request directly`;
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const serverSelector = document.getElementById('server-selector');
   if (serverSelector) {
     servers.forEach(server => {
       const option = document.createElement('option');
       option.value = server.url;
-      option.textContent = server.name;
+      option.textContent = `${server.name} [Loading...]`;
       serverSelector.appendChild(option);
     });
-    // Default to Server 01 is handled automatically as it's the first option
+    
+    serverSelector.addEventListener('change', updateSelectedServerInfo);
   }
+  
+  const refreshBtn = document.getElementById('refresh-servers-btn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', loadAllServerStatuses);
+  }
+  
+  // Initial status fetch
+  loadAllServerStatuses();
+  // Auto refresh every 30 seconds
+  setInterval(loadAllServerStatuses, 30000);
 });
 const phoneInput = document.getElementById('phone-input');
 const pairBtn = document.getElementById('pair-btn');
