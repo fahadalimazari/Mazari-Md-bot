@@ -1,4 +1,6 @@
-const { setAntiStatus, getAntiStatus, isSudo, incrementWarningCount, resetWarningCount } = require('../lib/index');
+const { setAntiStatus, getAntiStatus, isSudo } = require('../lib/index');
+const { incrementTempWarning, resetTempWarning } = require('../lib/tempWarnings');
+const { getSessionId } = require('../lib/sessionManager');
 const isAdmin = require('../lib/isAdmin');
 
 async function handleAntiStatusCommand(sock, chatId, userMessage, senderId, isSenderAdmin, message) {
@@ -100,13 +102,13 @@ async function handleAntiStatusDetection(sock, chatId, message, senderId) {
         const msg = message.message;
         const extendedTextMessage = msg.extendedTextMessage;
         const contextInfo = extendedTextMessage?.contextInfo;
-        
+
         let isStatusMention = false;
-        
+
         if (contextInfo && contextInfo.remoteJid === 'status@broadcast') {
             isStatusMention = true;
         }
-        
+
         // Check if the message is explicitly a group status mention
         if (msg.groupStatusMentionMessage || msg.statusMentionMessage || msg.groupStatusMessage || msg.groupStatusMessageV2) {
             isStatusMention = true;
@@ -118,7 +120,7 @@ async function handleAntiStatusDetection(sock, chatId, message, senderId) {
             msg.documentMessage?.contextInfo?.remoteJid === 'status@broadcast') {
             isStatusMention = true;
         }
-        
+
         if (!isStatusMention) return;
 
         // Check if sender is admin or sudo/owner
@@ -126,12 +128,12 @@ async function handleAntiStatusDetection(sock, chatId, message, senderId) {
         const isSenderAdmin = adminData.isSenderAdmin;
         const isBotAdmin = adminData.isBotAdmin;
         const isSenderSudo = await isSudo(senderId);
-        
+
         // Never delete/punish Admin or Owner/Sudo or the bot itself
         if (isSenderAdmin || isSenderSudo || message.key.fromMe) {
             return;
         }
-        
+
         if (!isBotAdmin) {
             return;
         }
@@ -142,6 +144,7 @@ async function handleAntiStatusDetection(sock, chatId, message, senderId) {
         }
 
         const mode = (antiConfig.action || 'warn').toLowerCase();
+        const sessionId = getSessionId(sock);
 
         if (mode === 'delete' || mode === 'del') {
             // Delete offending message
@@ -189,7 +192,8 @@ async function handleAntiStatusDetection(sock, chatId, message, senderId) {
             console.error('AntiGM delete error:', e.message);
         }
 
-        const warnCount = await incrementWarningCount(chatId, senderId);
+        // Increment session-isolated temporary warning count (5-minute sliding TTL)
+        const warnCount = incrementTempWarning(sessionId, chatId, senderId, 'antigm');
         const userTag = `@${senderId.split('@')[0].split(':')[0]}`;
 
         if (warnCount >= 3) {
@@ -199,7 +203,7 @@ async function handleAntiStatusDetection(sock, chatId, message, senderId) {
             } catch (e) {
                 console.error('AntiGM kick error on 3rd warning:', e.message);
             }
-            await resetWarningCount(chatId, senderId);
+            resetTempWarning(sessionId, chatId, senderId, 'antigm');
 
             const ui = `╭─〔 ⎔ 𝗔𝗡𝗧𝗜𝗚𝗠 𝗪𝗔𝗥𝗡𝗜𝗡𝗚 ⎔ 〕\n│ ⚠️ 𝗪𝗔𝗥𝗡𝗜𝗡𝗚 : 𝟯/𝟯\n│ 🗑️ 𝗠𝗘𝗦𝗦𝗔𝗚𝗘 : 𝗗𝗘𝗟𝗘𝗧𝗘𝗗\n│ 👢 𝗔𝗖𝗧𝗜𝗢𝗡 : 𝗨𝗦𝗘𝗥 𝗞𝗜𝗖𝗞𝗘𝗗\n╰────────────────╯`;
             try {
