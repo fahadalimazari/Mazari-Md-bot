@@ -230,62 +230,58 @@ async function gcsstatusCommand(sock, chatId, senderId, message, args) {
         }
         const startUI = `𝘎𝘊𝘚 𝘚𝘛𝘈𝘛𝘜𝘚 — 𝘛𝘰𝘵𝘢𝘭: ${targetGroupJids.length} 𝘎𝘳𝘰𝘶𝘱𝘴`;
         progressMsg = await sock.sendMessage(chatId, { text: startUI }, { quoted: message });
-        await new Promise(resolve => setTimeout(resolve, 1000));
 
         let successCount = 0;
         let failCount = 0;
-        let skippedCount = 0;
 
+        // Sequential batch processing as per user requirements
         const batchSize = 10;
-
+        // Helper to send status to a single group
+        const sendToGroup = async (targetJid) => {
+            try {
+                const messageToSend = generateWAMessageFromContent(
+                    targetJid,
+                    {
+                        groupStatusMessage: { message: content },
+                        groupStatusMessageV2: { message: content }
+                    },
+                    { userJid: sock.user.id }
+                );
+                await sock.relayMessage(targetJid, messageToSend.message, { messageId: messageToSend.key.id });
+                successCount++;
+            } catch (err) {
+                console.error(`[GROUP-STATUS] Failed to send status to ${targetJid}:`, err);
+                failCount++;
+            }
+        };
+        // Process groups in batches of 10
         for (let i = 0; i < targetGroupJids.length; i += batchSize) {
             const batch = targetGroupJids.slice(i, i + batchSize);
-            const startIdx = i + 1;
-            const endIdx = Math.min(i + batchSize, targetGroupJids.length);
-
+            // Update progress UI
             if (progressMsg) {
-                await sock.sendMessage(chatId, { 
-                    text: `𝘎𝘊𝘚 𝘚𝘛𝘈𝘛𝘜𝘚 — 𝘗𝘳𝘰𝘤𝘦𝘴𝘴𝘪𝘯𝘨: ${startIdx}–${endIdx} 𝘰𝘧 ${targetGroupJids.length}`,
-                    edit: progressMsg.key 
+                await sock.sendMessage(chatId, {
+                    text: `𝘎𝘊𝘚 𝘚𝘛𝘈𝘛𝘜𝘚 — 𝘗𝘳𝘰𝘤𝘦𝘴𝘴𝘪𝘯𝘎: ${i + 1}–${Math.min(i + batchSize, targetGroupJids.length)} 𝘰𝘧 ${targetGroupJids.length}`,
+                    edit: progressMsg.key
                 });
             }
-
-            for (const targetJid of batch) {
-                try {
-                    // Send the groupStatusMessage via relayMessage to bypass generateWAMessageContent validation
-                    console.log(`[GROUP-STATUS] Relaying group status to: ${targetJid}`);
-                    const messageToSend = generateWAMessageFromContent(
-                        targetJid,
-                        {
-                            groupStatusMessage: {
-                                message: content
-                            },
-                            groupStatusMessageV2: {
-                                message: content
-                            }
-                        },
-                        {
-                            userJid: sock.user.id
-                        }
-                    );
-
-                    await sock.relayMessage(targetJid, messageToSend.message, {
-                        messageId: messageToSend.key.id
-                    });
-                    successCount++;
-
-                    // Small delay per group
-                    if (targetGroupJids.length > 1) {
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                    }
-                } catch (err) {
-                    console.error(`[GROUP-STATUS] Failed to send status to ${targetJid}:`, err);
-                    failCount++;
+            // Sequence: first single, then pairs with 3‑second pauses
+            let idx = 0;
+            if (idx < batch.length) {
+                await sendToGroup(batch[idx]);
+                idx++;
+            }
+            while (idx < batch.length) {
+                for (let p = 0; p < 2 && idx < batch.length; p++) {
+                    await sendToGroup(batch[idx]);
+                    idx++;
+                }
+                if (idx < batch.length) {
+                    await new Promise(res => setTimeout(res, 3000));
                 }
             }
-
+            // Wait 10 seconds between batches if more groups remain
             if (i + batchSize < targetGroupJids.length) {
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Delay between batches
+                await new Promise(res => setTimeout(res, 10000));
             }
         }
 
