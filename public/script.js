@@ -5,61 +5,62 @@
 // Manually maintain the list of server URLs.
 // Replace each 'ACTUAL_URL_HERE' with the real Heroku endpoint for that server.
 const servers = [
-  { name: 'Server 01', url: 'https://mazari-bot-01-f026a4cd53d1.herokuapp.com/api/session/pair' },
-  { name: 'Server 02', url: 'https://mazari-bot-02-4229c3de13cc.herokuapp.com/api/session/pair' },
-  { name: 'Server 03', url: 'https://mazari-bot-03-20cdc505b493.herokuapp.com/api/session/pair' },
-  { name: 'Server 04', url: 'https://mazari-bot-04-0b8d550a00ec.herokuapp.com/api/session/pair' },
-  { name: 'Server 05', url: 'https://mazari-bot-05-332365fee9f6.herokuapp.com/api/session/pair' },
-  { name: 'Server 06', url: 'https://mazari-bot-06-9f991bbd2bfc.herokuapp.com/api/session/pair' },
-  { name: 'Server 07', url: 'https://mazari-bot-07-14871007c50f.herokuapp.com/api/session/pair' },
-  { name: 'Server 08', url: 'https://mazari-bot-08-79010111441b.herokuapp.com/api/session/pair' },
-  { name: 'Server 09', url: 'https://mazari-bot-09-f27b1333dfb3.herokuapp.com/api/session/pair' },
-  { name: 'Server 10', url: 'https://mazari-bot-10-036a7b753d89.herokuapp.com/api/session/pair' },
-  { name: 'Server 11', url: 'https://mazari-bot-11-078192affcee.herokuapp.com/api/session/pair' },
-  { name: 'Server 12', url: 'https://mazari-bot-12-9fa914f669d7.herokuapp.com/api/session/pair' },
-  { name: 'Server 13', url: 'https://mazari-bot-13-1a8bc74269c7.herokuapp.com/api/session/pair' },
-  { name: 'Server 14', url: 'https://mazari-bot-14-8b2687f326b2.herokuapp.com/api/session/pair' },
-  { name: 'Server 15', url: 'https://mazari-bot-15-79177262fa07.herokuapp.com/api/session/pair' },
-  { name: 'Server 16', url: 'https://mazari-bot-16-e495309df151.herokuapp.com/api/session/pair' },
-  { name: 'Server 17', url: 'https://mazari-bot-17-1485e858ee28.herokuapp.com/api/session/pair' },
-  { name: 'Server 18', url: 'https://mazari-bot-18-a17bd06b73eb.herokuapp.com/api/session/pair' },
-  { name: 'Server 19', url: 'https://mazari-bot-19-3b7fe4df963b.herokuapp.com/api/session/pair' },
-  { name: 'Server 20', url: 'https://mazari-bot-20-94624274e4e8.herokuapp.com/api/session/pair' },
-  { name: 'Server 21', url: 'https://mazari-bot-21-f004519eb609.herokuapp.com/api/session/pair' },
-  { name: 'Server 22', url: 'https://mazari-bot-22-d6a73f135972.herokuapp.com/api/session/pair' },
-  { name: 'Server 23', url: 'https://mazari-bot-23-f5300bd8abf9.herokuapp.com/api/session/pair' },
-  { name: 'Server 24', url: 'https://mazari-bot-24-4fa34b575d0c.herokuapp.com/api/session/pair' },
-  { name: 'Server 25', url: 'https://mazari-bot-25-8a125d4d49cb.herokuapp.com/api/session/pair' },
-  { name: 'Server 26', url: 'https://mazari-bot-26-dd0238e4a86e.herokuapp.com/api/session/pair' },
-  { name: 'Server 27', url: 'https://mazari-bot-27-8c415849bd43.herokuapp.com/api/session/pair' },
-  { name: 'Server 28', url: 'https://mazari-bot-28-eb9524a0ba52.herokuapp.com/api/session/pair' },
-  { name: 'Server 29', url: 'https://mazari-bot-29-a0c9526522cb.herokuapp.com/api/session/pair' },
-  { name: 'Server 30', url: 'https://mazari-bot-30-6de49455c489.herokuapp.com/api/session/pair' },
-  { name: 'Server 31', url: 'https://mazari-bot-31-1fc44228fe32.herokuapp.com/api/session/pair' },
-  { name: 'Server 32', url: 'https://mazari-bot-32-54cfd2ea5c04.herokuapp.com/api/session/pair' },
-  { name: 'Server 33', url: 'https://mazari-bot-33-71332da71939.herokuapp.com/api/session/pair' },
-  { name: 'Server 34', url: 'https://mazari-bot-34-1f12ae2ac13c.herokuapp.com/api/session/pair' },
-  { name: 'Server 35', url: 'https://mazari-bot-35-bdadea77c5a3.herokuapp.com/api/session/pair' },
-  { name: 'Server 36', url: 'https://mazari-bot-36-9a48c9e55954.herokuapp.com/api/session/pair' },
-  { name: 'Server 37', url: 'https://mazari-bot-37-f1e0cdaf8658.herokuapp.com/api/session/pair' },
-  { name: 'Server 38', url: 'https://mazari-bot-38-8379a844a0ab.herokuapp.com/api/session/pair' },
-  { name: 'Server 39', url: 'https://mazari-bot-39-0bfa448cfb99.herokuapp.com/api/session/pair' },
-  { name: 'Server 40', url: 'https://mazari-bot-40-8472329bcf93.herokuapp.com/api/session/pair' },
-  { name: 'Server 41', url: 'https://mazari-bot-41-f9b8f269d161.herokuapp.com/api/session/pair' },
-  { name: 'Server 42', url: 'https://mazari-bot-42-49094ffb596a.herokuapp.com/api/session/pair' },
-  { name: 'Server 43', url: 'https://mazari-bot-43-16d29632211e.herokuapp.com/api/session/pair' },
-  { name: 'Server 44', url: 'https://mazari-bot-44-3e346d98ce03.herokuapp.com/api/session/pair' },
-  { name: 'Server 45', url: 'https://mazari-bot-45-636eb257d34c.herokuapp.com/api/session/pair' },
-  { name: 'Server 46', url: 'https://mazari-bot-46-461000991742.herokuapp.com/api/session/pair' },
-  { name: 'Server 47', url: 'https://mazari-bot-47-4931fe88d456.herokuapp.com/api/session/pair' },
-  { name: 'Server 48', url: 'https://mazari-bot-48-3bdf66aa2289.herokuapp.com/api/session/pair' }
+  { name: 'Server 01', url: 'https://mazari-bot-01-f026a4cd53d1.herokuapp.com/api/pair' },
+  { name: 'Server 02', url: 'https://mazari-bot-02-4229c3de13cc.herokuapp.com/api/pair' },
+  { name: 'Server 03', url: 'https://mazari-bot-03-20cdc505b493.herokuapp.com/api/pair' },
+  { name: 'Server 04', url: 'https://mazari-bot-04-0b8d550a00ec.herokuapp.com/api/pair' },
+  { name: 'Server 05', url: 'https://mazari-bot-05-332365fee9f6.herokuapp.com/api/pair' },
+  { name: 'Server 06', url: 'https://mazari-bot-06-9f991bbd2bfc.herokuapp.com/api/pair' },
+  { name: 'Server 07', url: 'https://mazari-bot-07-14871007c50f.herokuapp.com/api/pair' },
+  { name: 'Server 08', url: 'https://mazari-bot-08-79010111441b.herokuapp.com/api/pair' },
+  { name: 'Server 09', url: 'https://mazari-bot-09-f27b1333dfb3.herokuapp.com/api/pair' },
+  { name: 'Server 10', url: 'https://mazari-bot-10-036a7b753d89.herokuapp.com/api/pair' },
+  { name: 'Server 11', url: 'https://mazari-bot-11-078192affcee.herokuapp.com/api/pair' },
+  { name: 'Server 12', url: 'https://mazari-bot-12-9fa914f669d7.herokuapp.com/api/pair' },
+  { name: 'Server 13', url: 'https://mazari-bot-13-1a8bc74269c7.herokuapp.com/api/pair' },
+  { name: 'Server 14', url: 'https://mazari-bot-14-8b2687f326b2.herokuapp.com/api/pair' },
+  { name: 'Server 15', url: 'https://mazari-bot-15-79177262fa07.herokuapp.com/api/pair' },
+  { name: 'Server 16', url: 'https://mazari-bot-16-e495309df151.herokuapp.com/api/pair' },
+  { name: 'Server 17', url: 'https://mazari-bot-17-1485e858ee28.herokuapp.com/api/pair' },
+  { name: 'Server 18', url: 'https://mazari-bot-18-a17bd06b73eb.herokuapp.com/api/pair' },
+  { name: 'Server 19', url: 'https://mazari-bot-19-3b7fe4df963b.herokuapp.com/api/pair' },
+  { name: 'Server 20', url: 'https://mazari-bot-20-94624274e4e8.herokuapp.com/api/pair' },
+  { name: 'Server 21', url: 'https://mazari-bot-21-f004519eb609.herokuapp.com/api/pair' },
+  { name: 'Server 22', url: 'https://mazari-bot-22-d6a73f135972.herokuapp.com/api/pair' },
+  { name: 'Server 23', url: 'https://mazari-bot-23-f5300bd8abf9.herokuapp.com/api/pair' },
+  { name: 'Server 24', url: 'https://mazari-bot-24-4fa34b575d0c.herokuapp.com/api/pair' },
+  { name: 'Server 25', url: 'https://mazari-bot-25-8a125d4d49cb.herokuapp.com/api/pair' },
+  { name: 'Server 26', url: 'https://mazari-bot-26-dd0238e4a86e.herokuapp.com/api/pair' },
+  { name: 'Server 27', url: 'https://mazari-bot-27-8c415849bd43.herokuapp.com/api/pair' },
+  { name: 'Server 28', url: 'https://mazari-bot-28-eb9524a0ba52.herokuapp.com/api/pair' },
+  { name: 'Server 29', url: 'https://mazari-bot-29-a0c9526522cb.herokuapp.com/api/pair' },
+  { name: 'Server 30', url: 'https://mazari-bot-30-6de49455c489.herokuapp.com/api/pair' },
+  { name: 'Server 31', url: 'https://mazari-bot-31-1fc44228fe32.herokuapp.com/api/pair' },
+  { name: 'Server 32', url: 'https://mazari-bot-32-54cfd2ea5c04.herokuapp.com/api/pair' },
+  { name: 'Server 33', url: 'https://mazari-bot-33-71332da71939.herokuapp.com/api/pair' },
+  { name: 'Server 34', url: 'https://mazari-bot-34-1f12ae2ac13c.herokuapp.com/api/pair' },
+  { name: 'Server 35', url: 'https://mazari-bot-35-bdadea77c5a3.herokuapp.com/api/pair' },
+  { name: 'Server 36', url: 'https://mazari-bot-36-9a48c9e55954.herokuapp.com/api/pair' },
+  { name: 'Server 37', url: 'https://mazari-bot-37-f1e0cdaf8658.herokuapp.com/api/pair' },
+  { name: 'Server 38', url: 'https://mazari-bot-38-8379a844a0ab.herokuapp.com/api/pair' },
+  { name: 'Server 39', url: 'https://mazari-bot-39-0bfa448cfb99.herokuapp.com/api/pair' },
+  { name: 'Server 40', url: 'https://mazari-bot-40-8472329bcf93.herokuapp.com/api/pair' },
+  { name: 'Server 41', url: 'https://mazari-bot-41-f9b8f269d161.herokuapp.com/api/pair' },
+  { name: 'Server 42', url: 'https://mazari-bot-42-49094ffb596a.herokuapp.com/api/pair' },
+  { name: 'Server 43', url: 'https://mazari-bot-43-16d29632211e.herokuapp.com/api/pair' },
+  { name: 'Server 44', url: 'https://mazari-bot-44-3e346d98ce03.herokuapp.com/api/pair' },
+  { name: 'Server 45', url: 'https://mazari-bot-45-636eb257d34c.herokuapp.com/api/pair' },
+  { name: 'Server 46', url: 'https://mazari-bot-46-461000991742.herokuapp.com/api/pair' },
+  { name: 'Server 47', url: 'https://mazari-bot-47-4931fe88d456.herokuapp.com/api/pair' },
+  { name: 'Server 48', url: 'https://mazari-bot-48-3bdf66aa2289.herokuapp.com/api/pair' }
 ];
+
 
 // Map to hold live server status data
 const serverStatusMap = new Map();
 
 async function fetchSingleServerStatus(server) {
-  const healthUrl = server.url.replace('/api/session/pair', '/api/health');
+  const healthUrl = server.url.replace('/api/pair', '/api/health');
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 4000);
   
@@ -369,7 +370,9 @@ pairBtn.addEventListener('click', async () => {
   try {
     const resp = await fetch(selectedUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify({ number: sanitized })
     });
     
