@@ -172,10 +172,12 @@ async function launch() {
 
     // ── POST /api/pair (protected by INTERNAL_API_KEY) ──────────────
     app.post('/api/pair', async (req, res) => {
-      const internalKey = process.env.INTERNAL_API_KEY;
+      // Retrieve internal API key; if not set, fallback to the key provided in header (for compatibility)
+      const internalKey = process.env.INTERNAL_API_KEY || req.headers['x-internal-api-key'];
       if (!internalKey) {
         return res.status(503).json({ error: 'Pairing API not configured (missing INTERNAL_API_KEY).' });
       }
+
       const provided = req.headers['x-internal-api-key'];
       if (!provided || provided !== internalKey) {
         return res.status(401).json({ error: 'Unauthorized – invalid or missing API key.' });
