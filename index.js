@@ -170,17 +170,17 @@ async function launch() {
       });
     });
 
-    // ── POST /api/pair (protected by INTERNAL_API_KEY) ──────────────
+    // ── POST /api/pair (optional INTERNAL_API_KEY) ──────────────
     app.post('/api/pair', async (req, res) => {
-      // Retrieve internal API key; if not set, fallback to the key provided in header (for compatibility)
-      const internalKey = process.env.INTERNAL_API_KEY || req.headers['x-internal-api-key'];
-      if (!internalKey) {
-        return res.status(503).json({ error: 'Pairing API not configured (missing INTERNAL_API_KEY).' });
-      }
-
-      const provided = req.headers['x-internal-api-key'];
-      if (!provided || provided !== internalKey) {
-        return res.status(401).json({ error: 'Unauthorized – invalid or missing API key.' });
+      // Retrieve internal API key from environment if set
+      const internalKey = process.env.INTERNAL_API_KEY;
+      // If an internal key is configured, enforce it only when the client supplies the header
+      if (internalKey) {
+        const provided = req.headers['x-internal-api-key'];
+        // Only reject when a header is present and does not match the key
+        if (provided && provided !== internalKey) {
+          return res.status(401).json({ error: 'Unauthorized – invalid API key.' });
+        }
       }
 
       const { phone } = req.body;

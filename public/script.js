@@ -373,7 +373,7 @@ pairBtn.addEventListener('click', async () => {
       headers: { 
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ number: sanitized })
+      body: JSON.stringify({ phone: sanitized })
     });
     
     let data;
